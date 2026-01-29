@@ -1,0 +1,17 @@
+# dependencies
+node_modules/
+
+# next build output
+.next/
+
+# environment files
+.env
+.env.local
+
+# sensitive / local data
+data/*.json
+
+# OS files
+.DS_Store
+data/users.json
+.env.local
