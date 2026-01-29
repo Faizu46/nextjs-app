@@ -259,7 +259,7 @@
 @media (max-width: 768px) {
   .sidebar {
     width: 100%;
-    height: auto;
+    height: 60px;
     flex-direction: row;
     padding-top: 0;
     padding: 10px;

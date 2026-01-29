@@ -57,10 +57,7 @@ export default function Login() {
   };
 
   return (
-    <>
-      <Navigation />
-      
-      <main>
+    <main>
         <section className="section">
           <div className="container">
             <div className="row justify-content-center">
@@ -147,6 +144,5 @@ export default function Login() {
           </div>
         </section>
       </main>
-    </>
   );
 }

@@ -503,7 +503,7 @@ export default function Interview() {
 
   if (sessionResult) {
     return (
-      <main>
+      <main className="main-content">
         <section className="section">
           <div className="container">
             <h1 className="text-center mb-4">Interview Session Complete!</h1>
@@ -815,7 +815,7 @@ export default function Interview() {
   const progress = ((currentQuestionIndex + 1) / selectedQuestions.length) * 100;
 
   return (
-    <main>
+    <main className="main-content">
         <section className="section">
           <div className="container">
             <div className="row justify-content-center">

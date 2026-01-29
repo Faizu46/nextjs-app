@@ -8,9 +8,10 @@ export default function LayoutWrapper({ children }: { children: ReactNode }) {
   const { data: session } = useSession();
   const pathname = usePathname();
   
-  // Hide sidebar on resume-builder page
+  // Hide sidebar on home and resume-builder pages
+  const isHomePage = pathname === '/';
   const isResumeBuilder = pathname === '/resume-builder';
-  const showSidebar = session && !isResumeBuilder;
+  const showSidebar = session && !isHomePage && !isResumeBuilder;
 
   return (
     <div className={showSidebar ? 'with-sidebar' : 'without-sidebar'}>

@@ -207,7 +207,7 @@ export default function ResumeBuilder() {
   /* ================= UI ================= */
 
   return (
-    <main>
+    <main className="main-content">
       <section className="section">
         <div className="container">
           <div className="row justify-content-center">
