@@ -15,3 +15,4 @@ data/*.json
 .DS_Store
 data/users.json
 .env.local
+.vercel
