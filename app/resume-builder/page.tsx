@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
 import ResumePDF from './ResumePDF';
 
 /* ================= TYPES ================= */
@@ -192,16 +191,230 @@ export default function ResumeBuilder() {
 
   /* ================= PDF ================= */
 
-  const handleDownloadPDF = async () => {
-    const el = document.getElementById('resume-pdf');
-    if (!el) return;
+  const handleDownloadPDF = () => {
+    const doc = new jsPDF();
+    const pageWidth = 210;
+    const margin = 20;
+    let y = 20;
+    const lineHeight = 6;
 
-    const canvas = await html2canvas(el, { scale: 2, backgroundColor: '#fff' });
-    const img = canvas.toDataURL('image/png');
+    // Helper to check page break
+    const checkPageBreak = (space = 10) => {
+      if (y + space > 280) {
+        doc.addPage();
+        y = 20;
+      }
+    };
 
-    const pdf = new jsPDF('p', 'mm', 'a4');
-    pdf.addImage(img, 'PNG', 0, 0, 210, 297);
-    pdf.save('resume.pdf');
+    // --- Header ---
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(20);
+    doc.text(personal.fullName || 'Your Name', margin, y);
+    y += 8;
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(10);
+    const contactParts = [
+      personal.email,
+      personal.phone,
+      personal.location,
+      personal.linkedin,
+      personal.website
+    ].filter(Boolean);
+
+    if (contactParts.length > 0) {
+      doc.text(contactParts.join(' | '), margin, y);
+      y += 10;
+    }
+
+    doc.setDrawColor(0);
+    doc.line(margin, y, pageWidth - margin, y);
+    y += 10;
+
+    // --- Professional Summary ---
+    if (summary.objective || summary.summary) {
+      checkPageBreak(30);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(12);
+      doc.text(summary.objective ? 'OBJECTIVE' : 'PROFESSIONAL SUMMARY', margin, y);
+      y += 6;
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(10);
+      const summaryText = doc.splitTextToSize(summary.objective || summary.summary, pageWidth - (margin * 2));
+      doc.text(summaryText, margin, y);
+      y += (summaryText.length * 5) + 6;
+    }
+
+    // --- Experience ---
+    if (experiences.some(e => e.company || e.role)) {
+      checkPageBreak(20);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(12);
+      doc.text('EXPERIENCE', margin, y);
+      y += 6;
+      doc.line(margin, y - 2, pageWidth - margin, y - 2); // Underline section
+
+      experiences.forEach(exp => {
+        if (!exp.company && !exp.role) return;
+        checkPageBreak(25);
+
+        // Role & Company
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(11);
+        doc.text(exp.role || 'Role', margin, y);
+        const companyText = exp.company ? ` - ${exp.company}` : '';
+        doc.setFont('helvetica', 'normal');
+        doc.text(companyText, margin + doc.getTextWidth(exp.role || 'Role'), y);
+
+        // Date & Location
+        doc.setFontSize(9);
+        doc.setTextColor(100);
+        const dateText = `${exp.start || ''} - ${exp.end || 'Present'}`;
+        const metaText = [dateText, exp.location].filter(Boolean).join(' | ');
+        doc.text(metaText, pageWidth - margin - doc.getTextWidth(metaText), y);
+        doc.setTextColor(0);
+        y += 5;
+
+        // Description
+        if (exp.summary) {
+          doc.setFontSize(10);
+          const descLines = doc.splitTextToSize(exp.summary, pageWidth - (margin * 2));
+          doc.text(descLines, margin, y);
+          y += (descLines.length * 5);
+        }
+        y += 4;
+      });
+      y += 2;
+    }
+
+    // --- Education ---
+    if (education.some(e => e.institution || e.degree)) {
+      checkPageBreak(20);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(12);
+      doc.text('EDUCATION', margin, y);
+      y += 6;
+      doc.line(margin, y - 2, pageWidth - margin, y - 2);
+
+      education.forEach(edu => {
+        if (!edu.institution && !edu.degree) return;
+        checkPageBreak(20);
+
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(11);
+        doc.text(edu.degree || 'Degree', margin, y);
+        const instText = edu.institution ? ` - ${edu.institution}` : '';
+        doc.setFont('helvetica', 'normal');
+        doc.text(instText, margin + doc.getTextWidth(edu.degree || 'Degree'), y);
+
+        doc.setFontSize(9);
+        doc.setTextColor(100);
+        const dateText = `${edu.start || ''} - ${edu.end || 'Present'}`;
+        doc.text(dateText, pageWidth - margin - doc.getTextWidth(dateText), y);
+        doc.setTextColor(0);
+        y += 5;
+
+        if (edu.summary) {
+          doc.setFontSize(10);
+          const descLines = doc.splitTextToSize(edu.summary, pageWidth - (margin * 2));
+          doc.text(descLines, margin, y);
+          y += (descLines.length * 5);
+        }
+        y += 4;
+      });
+      y += 2;
+    }
+
+    // --- Projects ---
+    if (projects.some(p => p.name)) {
+      checkPageBreak(20);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(12);
+      doc.text('PROJECTS', margin, y);
+      y += 6;
+      doc.line(margin, y - 2, pageWidth - margin, y - 2);
+
+      projects.forEach(proj => {
+        if (!proj.name) return;
+        checkPageBreak(20);
+
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(11);
+        doc.text(proj.name, margin, y);
+
+        if (proj.link) {
+          doc.setFont('helvetica', 'normal');
+          doc.setFontSize(9);
+          doc.setTextColor(0, 0, 255);
+          const linkWidth = doc.getTextWidth(proj.link);
+          doc.text(proj.link, pageWidth - margin - linkWidth, y);
+          doc.setTextColor(0);
+        }
+        y += 5;
+
+        if (proj.technologies) {
+          doc.setFont('helvetica', 'italic');
+          doc.setFontSize(9);
+          doc.setTextColor(60);
+          doc.text(`Technologies: ${proj.technologies}`, margin, y);
+          doc.setTextColor(0);
+          y += 4;
+        }
+
+        if (proj.description) {
+          doc.setFont('helvetica', 'normal');
+          doc.setFontSize(10);
+          const descLines = doc.splitTextToSize(proj.description, pageWidth - (margin * 2));
+          doc.text(descLines, margin, y);
+          y += (descLines.length * 5);
+        }
+        y += 4;
+      });
+      y += 2;
+    }
+
+    // --- Skills ---
+    if (skills) {
+      checkPageBreak(20);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(12);
+      doc.text('SKILLS', margin, y);
+      y += 6;
+      doc.line(margin, y - 2, pageWidth - margin, y - 2);
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(10);
+      const skillLines = doc.splitTextToSize(skills, pageWidth - (margin * 2));
+      doc.text(skillLines, margin, y);
+      y += (skillLines.length * 5) + 4;
+    }
+
+    // --- Certifications & Awards ---
+    // (Combining for brevity if needed, but adding Certifications separately)
+    if (certifications.some(c => c.name)) {
+      checkPageBreak(20);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(12);
+      doc.text('CERTIFICATIONS', margin, y);
+      y += 6;
+      doc.line(margin, y - 2, pageWidth - margin, y - 2);
+
+      certifications.forEach(cert => {
+        if (!cert.name) return;
+        checkPageBreak(15);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(10);
+        doc.text(cert.name, margin, y);
+        if (cert.issuer) {
+          doc.setFont('helvetica', 'normal');
+          doc.text(` - ${cert.issuer}`, margin + doc.getTextWidth(cert.name), y);
+        }
+        y += 5;
+      });
+    }
+
+    doc.save('resume.pdf');
   };
 
   /* ================= UI ================= */
@@ -355,9 +568,9 @@ export default function ResumeBuilder() {
                           Tip: Perfect for experienced professionals! Summarize your years of experience, expertise, and major accomplishments.
                         </small>
                       </div>
-                      <div style={{ 
-                        background: 'rgba(102, 126, 234, 0.1)', 
-                        padding: '1rem', 
+                      <div style={{
+                        background: 'rgba(102, 126, 234, 0.1)',
+                        padding: '1rem',
                         borderRadius: '8px',
                         border: '1px solid rgba(102, 126, 234, 0.2)'
                       }}>
@@ -857,10 +1070,10 @@ export default function ResumeBuilder() {
                         <p style={{ color: 'var(--text-secondary)', marginBottom: '1rem' }}>
                           Review your information below and download your professional resume as a PDF.
                         </p>
-                        <div style={{ 
-                          background: 'rgba(102, 126, 234, 0.1)', 
-                          padding: '1rem', 
-                          borderRadius: '8px', 
+                        <div style={{
+                          background: 'rgba(102, 126, 234, 0.1)',
+                          padding: '1rem',
+                          borderRadius: '8px',
                           marginBottom: '1.5rem',
                           border: '1px solid rgba(102, 126, 234, 0.2)'
                         }}>
@@ -884,16 +1097,16 @@ export default function ResumeBuilder() {
                           </p>
                         </div>
                         <div className="preview-content">
-                          <ResumePDF data={{ 
-                            personal, 
+                          <ResumePDF data={{
+                            personal,
                             summary,
-                            experiences, 
+                            experiences,
                             education,
                             projects,
                             certifications,
                             languages,
                             awards,
-                            skills 
+                            skills
                           }} />
                         </div>
                       </div>
@@ -1048,29 +1261,6 @@ export default function ResumeBuilder() {
           overflow-y: auto;
           box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.05);
           position: relative;
-        }
-
-        .preview-content * {
-          color: #000000 !important;
-        }
-
-        .preview-content h1,
-        .preview-content h2,
-        .preview-content h3,
-        .preview-content h4,
-        .preview-content h5,
-        .preview-content h6 {
-          color: #1a1a1a !important;
-          background: none !important;
-          -webkit-background-clip: unset !important;
-          -webkit-text-fill-color: #1a1a1a !important;
-          background-clip: unset !important;
-        }
-
-        .preview-content p,
-        .preview-content span,
-        .preview-content div {
-          color: #333333 !important;
         }
 
         .preview-content::-webkit-scrollbar {

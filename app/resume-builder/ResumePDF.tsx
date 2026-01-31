@@ -70,16 +70,16 @@ interface ResumePDFProps {
 }
 
 export default function ResumePDF({ data }: ResumePDFProps) {
-  const { 
-    personal, 
-    summary = { objective: '', summary: '' }, 
-    experiences = [], 
-    education = [], 
-    projects = [], 
-    certifications = [], 
-    languages = [], 
-    awards = [], 
-    skills = '' 
+  const {
+    personal,
+    summary = { objective: '', summary: '' },
+    experiences = [],
+    education = [],
+    projects = [],
+    certifications = [],
+    languages = [],
+    awards = [],
+    skills = ''
   } = data;
 
   return (
@@ -90,11 +90,12 @@ export default function ResumePDF({ data }: ResumePDFProps) {
         maxWidth: '210mm',
         minHeight: '297mm',
         padding: '20mm',
-        fontFamily: 'Arial, sans-serif',
+        fontFamily: '"Inter", "Roboto", "Helvetica Neue", sans-serif',
         fontSize: '11px',
         color: '#000000',
         background: '#ffffff',
         boxSizing: 'border-box',
+        lineHeight: '1.5',
       }}
     >
       {/* HEADER */}

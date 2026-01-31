@@ -646,12 +646,13 @@ main.main-content {
 @media (max-width: 768px) {
   main.main-content {
     margin-left: 0 !important;
-    margin-top: 120px !important; /* Account for navbar (60px) + mobile sidebar (60px) */
+    margin-top: 0 !important; /* Navbar is sticky/relative, no need for manual offset */
     padding: 1rem;
+    min-height: calc(100vh - 120px); /* Adjust min-height calculation */
   }
 
   .without-sidebar main.main-content {
-    margin-top: 60px !important; /* Only navbar height when no sidebar */
+    margin-top: 0 !important;
   }
 }
 
