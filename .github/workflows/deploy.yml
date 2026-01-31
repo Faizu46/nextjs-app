@@ -35,7 +35,11 @@ jobs:
 
       # 6️⃣ Build Next.js project
       - name: Build project
-        run: npm run build --webpack   # force webpack to avoid Turbopack issues
+        run: npm run build --webpack
+        env:
+          MONGODB_URI: ${{ secrets.MONGODB_URI }}
+          NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET }}
+          NEXTAUTH_URL: ${{ secrets.NEXTAUTH_URL }}
 
       # 7️⃣ Deploy to Vercel
       - name: Deploy to Vercel
