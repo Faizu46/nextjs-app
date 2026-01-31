@@ -1,76 +1,29 @@
 'use client';
 
 import { useState } from 'react';
-import jsPDF from 'jspdf';
-import ResumePDF from './ResumePDF';
+import dynamic from 'next/dynamic';
+import { useSession } from 'next-auth/react';
+import Link from 'next/link';
+import {
+  ResumeData,
+  PersonalInfo,
+  Summary,
+  Experience,
+  Education,
+  Project,
+  Certification,
+  Language,
+  Award,
+  SkillCategory
+} from '../../types/resume';
 
-/* ================= TYPES ================= */
-
-type Step = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8;
-
-interface PersonalInfo {
-  fullName: string;
-  email: string;
-  phone: string;
-  location: string;
-  linkedin: string;
-  website: string;
-}
-
-interface Summary {
-  objective: string;
-  summary: string;
-}
-
-interface Experience {
-  company: string;
-  role: string;
-  location: string;
-  start: string;
-  end: string;
-  summary: string;
-}
-
-interface Education {
-  institution: string;
-  degree: string;
-  location: string;
-  start: string;
-  end: string;
-  summary: string;
-  gpa: string;
-}
-
-interface Project {
-  name: string;
-  description: string;
-  technologies: string;
-  link: string;
-}
-
-interface Certification {
-  name: string;
-  issuer: string;
-  date: string;
-  expiryDate: string;
-}
-
-interface Language {
-  name: string;
-  proficiency: string;
-}
-
-interface Award {
-  title: string;
-  issuer: string;
-  date: string;
-  description: string;
-}
+const ResumePreview = dynamic(() => import('../../components/ResumePreview'), { ssr: false });
 
 /* ================= MAIN ================= */
 
 export default function ResumeBuilder() {
-  const [step, setStep] = useState<Step>(1);
+  const { data: session } = useSession(); // Keep session hook if used later or for auth check
+  const [step, setStep] = useState(1);
 
   const [personal, setPersonal] = useState<PersonalInfo>({
     fullName: '',
@@ -110,7 +63,12 @@ export default function ResumeBuilder() {
     { title: '', issuer: '', date: '', description: '' },
   ]);
 
-  const [skills, setSkills] = useState('');
+  const [skillCategories, setSkillCategories] = useState<SkillCategory[]>([
+    { name: 'Technical Skills', skills: '' },
+    { name: 'Soft Skills', skills: '' }
+  ]);
+
+  const [selectedTemplate, setSelectedTemplate] = useState('classic');
 
   /* ================= HELPERS ================= */
 
@@ -150,6 +108,12 @@ export default function ResumeBuilder() {
     setAwards(updated);
   };
 
+  const updateSkillCategory = (index: number, field: keyof SkillCategory, value: string) => {
+    const updated = [...skillCategories];
+    updated[index][field] = value;
+    setSkillCategories(updated);
+  };
+
   const addExperience = () =>
     setExperiences([...experiences, { company: '', role: '', location: '', start: '', end: '', summary: '' }]);
 
@@ -167,6 +131,9 @@ export default function ResumeBuilder() {
 
   const addAward = () =>
     setAwards([...awards, { title: '', issuer: '', date: '', description: '' }]);
+
+  const addSkillCategory = () =>
+    setSkillCategories([...skillCategories, { name: '', skills: '' }]);
 
   const removeExperience = (index: number) =>
     setExperiences(experiences.filter((_, i) => i !== index));
@@ -186,235 +153,22 @@ export default function ResumeBuilder() {
   const removeAward = (index: number) =>
     setAwards(awards.filter((_, i) => i !== index));
 
-  const next = () => step < 8 && setStep((step + 1) as Step);
-  const back = () => step > 1 && setStep((step - 1) as Step);
+  const removeSkillCategory = (index: number) =>
+    setSkillCategories(skillCategories.filter((_, i) => i !== index));
 
-  /* ================= PDF ================= */
+  const next = () => step < 10 && setStep(step + 1);
+  const back = () => step > 1 && setStep(step - 1);
 
-  const handleDownloadPDF = () => {
-    const doc = new jsPDF();
-    const pageWidth = 210;
-    const margin = 20;
-    let y = 20;
-    const lineHeight = 6;
-
-    // Helper to check page break
-    const checkPageBreak = (space = 10) => {
-      if (y + space > 280) {
-        doc.addPage();
-        y = 20;
-      }
-    };
-
-    // --- Header ---
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(20);
-    doc.text(personal.fullName || 'Your Name', margin, y);
-    y += 8;
-
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(10);
-    const contactParts = [
-      personal.email,
-      personal.phone,
-      personal.location,
-      personal.linkedin,
-      personal.website
-    ].filter(Boolean);
-
-    if (contactParts.length > 0) {
-      doc.text(contactParts.join(' | '), margin, y);
-      y += 10;
-    }
-
-    doc.setDrawColor(0);
-    doc.line(margin, y, pageWidth - margin, y);
-    y += 10;
-
-    // --- Professional Summary ---
-    if (summary.objective || summary.summary) {
-      checkPageBreak(30);
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(12);
-      doc.text(summary.objective ? 'OBJECTIVE' : 'PROFESSIONAL SUMMARY', margin, y);
-      y += 6;
-
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(10);
-      const summaryText = doc.splitTextToSize(summary.objective || summary.summary, pageWidth - (margin * 2));
-      doc.text(summaryText, margin, y);
-      y += (summaryText.length * 5) + 6;
-    }
-
-    // --- Experience ---
-    if (experiences.some(e => e.company || e.role)) {
-      checkPageBreak(20);
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(12);
-      doc.text('EXPERIENCE', margin, y);
-      y += 6;
-      doc.line(margin, y - 2, pageWidth - margin, y - 2); // Underline section
-
-      experiences.forEach(exp => {
-        if (!exp.company && !exp.role) return;
-        checkPageBreak(25);
-
-        // Role & Company
-        doc.setFont('helvetica', 'bold');
-        doc.setFontSize(11);
-        doc.text(exp.role || 'Role', margin, y);
-        const companyText = exp.company ? ` - ${exp.company}` : '';
-        doc.setFont('helvetica', 'normal');
-        doc.text(companyText, margin + doc.getTextWidth(exp.role || 'Role'), y);
-
-        // Date & Location
-        doc.setFontSize(9);
-        doc.setTextColor(100);
-        const dateText = `${exp.start || ''} - ${exp.end || 'Present'}`;
-        const metaText = [dateText, exp.location].filter(Boolean).join(' | ');
-        doc.text(metaText, pageWidth - margin - doc.getTextWidth(metaText), y);
-        doc.setTextColor(0);
-        y += 5;
-
-        // Description
-        if (exp.summary) {
-          doc.setFontSize(10);
-          const descLines = doc.splitTextToSize(exp.summary, pageWidth - (margin * 2));
-          doc.text(descLines, margin, y);
-          y += (descLines.length * 5);
-        }
-        y += 4;
-      });
-      y += 2;
-    }
-
-    // --- Education ---
-    if (education.some(e => e.institution || e.degree)) {
-      checkPageBreak(20);
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(12);
-      doc.text('EDUCATION', margin, y);
-      y += 6;
-      doc.line(margin, y - 2, pageWidth - margin, y - 2);
-
-      education.forEach(edu => {
-        if (!edu.institution && !edu.degree) return;
-        checkPageBreak(20);
-
-        doc.setFont('helvetica', 'bold');
-        doc.setFontSize(11);
-        doc.text(edu.degree || 'Degree', margin, y);
-        const instText = edu.institution ? ` - ${edu.institution}` : '';
-        doc.setFont('helvetica', 'normal');
-        doc.text(instText, margin + doc.getTextWidth(edu.degree || 'Degree'), y);
-
-        doc.setFontSize(9);
-        doc.setTextColor(100);
-        const dateText = `${edu.start || ''} - ${edu.end || 'Present'}`;
-        doc.text(dateText, pageWidth - margin - doc.getTextWidth(dateText), y);
-        doc.setTextColor(0);
-        y += 5;
-
-        if (edu.summary) {
-          doc.setFontSize(10);
-          const descLines = doc.splitTextToSize(edu.summary, pageWidth - (margin * 2));
-          doc.text(descLines, margin, y);
-          y += (descLines.length * 5);
-        }
-        y += 4;
-      });
-      y += 2;
-    }
-
-    // --- Projects ---
-    if (projects.some(p => p.name)) {
-      checkPageBreak(20);
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(12);
-      doc.text('PROJECTS', margin, y);
-      y += 6;
-      doc.line(margin, y - 2, pageWidth - margin, y - 2);
-
-      projects.forEach(proj => {
-        if (!proj.name) return;
-        checkPageBreak(20);
-
-        doc.setFont('helvetica', 'bold');
-        doc.setFontSize(11);
-        doc.text(proj.name, margin, y);
-
-        if (proj.link) {
-          doc.setFont('helvetica', 'normal');
-          doc.setFontSize(9);
-          doc.setTextColor(0, 0, 255);
-          const linkWidth = doc.getTextWidth(proj.link);
-          doc.text(proj.link, pageWidth - margin - linkWidth, y);
-          doc.setTextColor(0);
-        }
-        y += 5;
-
-        if (proj.technologies) {
-          doc.setFont('helvetica', 'italic');
-          doc.setFontSize(9);
-          doc.setTextColor(60);
-          doc.text(`Technologies: ${proj.technologies}`, margin, y);
-          doc.setTextColor(0);
-          y += 4;
-        }
-
-        if (proj.description) {
-          doc.setFont('helvetica', 'normal');
-          doc.setFontSize(10);
-          const descLines = doc.splitTextToSize(proj.description, pageWidth - (margin * 2));
-          doc.text(descLines, margin, y);
-          y += (descLines.length * 5);
-        }
-        y += 4;
-      });
-      y += 2;
-    }
-
-    // --- Skills ---
-    if (skills) {
-      checkPageBreak(20);
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(12);
-      doc.text('SKILLS', margin, y);
-      y += 6;
-      doc.line(margin, y - 2, pageWidth - margin, y - 2);
-
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(10);
-      const skillLines = doc.splitTextToSize(skills, pageWidth - (margin * 2));
-      doc.text(skillLines, margin, y);
-      y += (skillLines.length * 5) + 4;
-    }
-
-    // --- Certifications & Awards ---
-    // (Combining for brevity if needed, but adding Certifications separately)
-    if (certifications.some(c => c.name)) {
-      checkPageBreak(20);
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(12);
-      doc.text('CERTIFICATIONS', margin, y);
-      y += 6;
-      doc.line(margin, y - 2, pageWidth - margin, y - 2);
-
-      certifications.forEach(cert => {
-        if (!cert.name) return;
-        checkPageBreak(15);
-        doc.setFont('helvetica', 'bold');
-        doc.setFontSize(10);
-        doc.text(cert.name, margin, y);
-        if (cert.issuer) {
-          doc.setFont('helvetica', 'normal');
-          doc.text(` - ${cert.issuer}`, margin + doc.getTextWidth(cert.name), y);
-        }
-        y += 5;
-      });
-    }
-
-    doc.save('resume.pdf');
+  const resumeData: ResumeData = {
+    personal,
+    summary,
+    experiences,
+    education,
+    projects,
+    certifications,
+    languages,
+    awards,
+    skillCategories
   };
 
   /* ================= UI ================= */
@@ -429,18 +183,20 @@ export default function ResumeBuilder() {
               <div className="card mb-4">
                 <div className="card-body">
                   <div className="steps-indicator">
-                    {[1, 2, 3, 4, 5, 6, 7, 8].map((stepNum) => (
+                    {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((stepNum) => (
                       <div key={stepNum} className={`step-item ${stepNum === step ? 'active' : stepNum < step ? 'completed' : ''}`}>
                         <div className="step-number">{stepNum < step ? '✓' : stepNum}</div>
-                        <div className="step-label">
-                          {stepNum === 1 && 'Personal'}
+                        <div className="step-label d-none d-md-block">
+                          {stepNum === 1 && 'Info'}
                           {stepNum === 2 && 'Summary'}
-                          {stepNum === 3 && 'Experience'}
-                          {stepNum === 4 && 'Education'}
-                          {stepNum === 5 && 'Projects'}
-                          {stepNum === 6 && 'Certifications'}
-                          {stepNum === 7 && 'More'}
-                          {stepNum === 8 && 'Preview'}
+                          {stepNum === 3 && 'Exp'}
+                          {stepNum === 4 && 'Projects'}
+                          {stepNum === 5 && 'Skills'}
+                          {stepNum === 6 && 'Edu'}
+                          {stepNum === 7 && 'Certs'}
+                          {stepNum === 8 && 'Misc'}
+                          {stepNum === 9 && 'Design'}
+                          {stepNum === 10 && 'Done'}
                         </div>
                       </div>
                     ))}
@@ -454,24 +210,25 @@ export default function ResumeBuilder() {
                     {step === 1 && 'Personal Information'}
                     {step === 2 && 'Summary & Objective'}
                     {step === 3 && 'Work Experience'}
-                    {step === 4 && 'Education'}
-                    {step === 5 && 'Projects'}
-                    {step === 6 && 'Certifications'}
-                    {step === 7 && 'Languages, Awards & Skills'}
-                    {step === 8 && 'Preview & Download'}
+                    {step === 4 && 'Projects'}
+                    {step === 5 && 'Skills & Expertise'}
+                    {step === 6 && 'Education'}
+                    {step === 7 && 'Certifications'}
+                    {step === 8 && 'Languages & Awards'}
+                    {step === 9 && 'Choose Template'}
+                    {step === 10 && 'Preview & Download'}
                   </h2>
                   <p style={{ margin: '0.5rem 0 0 0', color: 'var(--text-secondary)', fontSize: '0.875rem' }}>
-                    Step {step} of 5
+                    Step {step} of 10
                   </p>
                 </div>
                 <div className="card-body">
-                  {/* STEP 1 */}
+                  {/* STEP 1 - Personal */}
                   {step === 1 && (
                     <div className="form-section">
                       <div className="form-group">
-                        <label htmlFor="fullName" className="form-label">Full Name</label>
+                        <label className="form-label">Full Name</label>
                         <input
-                          id="fullName"
                           type="text"
                           className="form-control"
                           placeholder="John Doe"
@@ -480,9 +237,8 @@ export default function ResumeBuilder() {
                         />
                       </div>
                       <div className="form-group">
-                        <label htmlFor="email" className="form-label">Email Address</label>
+                        <label className="form-label">Email Address</label>
                         <input
-                          id="email"
                           type="email"
                           className="form-control"
                           placeholder="john.doe@example.com"
@@ -491,9 +247,8 @@ export default function ResumeBuilder() {
                         />
                       </div>
                       <div className="form-group">
-                        <label htmlFor="phone" className="form-label">Phone Number</label>
+                        <label className="form-label">Phone Number</label>
                         <input
-                          id="phone"
                           type="tel"
                           className="form-control"
                           placeholder="+1 (555) 123-4567"
@@ -502,9 +257,8 @@ export default function ResumeBuilder() {
                         />
                       </div>
                       <div className="form-group">
-                        <label htmlFor="location" className="form-label">Location</label>
+                        <label className="form-label">Location</label>
                         <input
-                          id="location"
                           type="text"
                           className="form-control"
                           placeholder="City, State/Country"
@@ -513,9 +267,8 @@ export default function ResumeBuilder() {
                         />
                       </div>
                       <div className="form-group">
-                        <label htmlFor="linkedin" className="form-label">LinkedIn Profile (Optional)</label>
+                        <label className="form-label">LinkedIn Profile</label>
                         <input
-                          id="linkedin"
                           type="url"
                           className="form-control"
                           placeholder="https://linkedin.com/in/johndoe"
@@ -524,9 +277,8 @@ export default function ResumeBuilder() {
                         />
                       </div>
                       <div className="form-group">
-                        <label htmlFor="website" className="form-label">Personal Website/Portfolio (Optional)</label>
+                        <label className="form-label">Website/Portfolio</label>
                         <input
-                          id="website"
                           type="url"
                           className="form-control"
                           placeholder="https://johndoe.com"
@@ -537,46 +289,28 @@ export default function ResumeBuilder() {
                     </div>
                   )}
 
-                  {/* STEP 2 - Summary & Objective */}
+                  {/* STEP 2 - Summary */}
                   {step === 2 && (
                     <div className="form-section">
                       <div className="form-group">
-                        <label htmlFor="objective" className="form-label">Professional Objective</label>
+                        <label className="form-label">Professional Objective</label>
                         <textarea
-                          id="objective"
                           className="form-control"
                           rows={4}
-                          placeholder="A brief statement about your career goals and what you're looking for in your next role. (2-3 sentences)"
+                          placeholder="A brief statement about your career goals..."
                           value={summary.objective}
                           onChange={e => setSummary({ ...summary, objective: e.target.value })}
                         />
-                        <small style={{ display: 'block', marginTop: '0.5rem', color: 'var(--text-secondary)' }}>
-                          Tip: Great for freshers! Highlight your career aspirations and what you bring to the table.
-                        </small>
                       </div>
                       <div className="form-group">
-                        <label htmlFor="summary" className="form-label">Professional Summary</label>
+                        <label className="form-label">Professional Summary</label>
                         <textarea
-                          id="summary"
                           className="form-control"
                           rows={6}
-                          placeholder="A brief summary of your professional background, key skills, and achievements. (3-5 sentences)"
+                          placeholder="Summary of your professional background and key achievements..."
                           value={summary.summary}
                           onChange={e => setSummary({ ...summary, summary: e.target.value })}
                         />
-                        <small style={{ display: 'block', marginTop: '0.5rem', color: 'var(--text-secondary)' }}>
-                          Tip: Perfect for experienced professionals! Summarize your years of experience, expertise, and major accomplishments.
-                        </small>
-                      </div>
-                      <div style={{
-                        background: 'rgba(102, 126, 234, 0.1)',
-                        padding: '1rem',
-                        borderRadius: '8px',
-                        border: '1px solid rgba(102, 126, 234, 0.2)'
-                      }}>
-                        <p style={{ margin: 0, fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
-                          💡 <strong>Note:</strong> You can fill either Objective (for freshers) or Summary (for experienced), or both. Leave empty if not applicable.
-                        </p>
                       </div>
                     </div>
                   )}
@@ -588,34 +322,29 @@ export default function ResumeBuilder() {
                         <div key={i} className="entry-card">
                           <div className="entry-card-header">
                             <h4 style={{ margin: 0 }}>Experience #{i + 1}</h4>
-                            {experiences.length > 1 && (
-                              <button
-                                className="btn btn-sm"
-                                onClick={() => removeExperience(i)}
-                                style={{ background: 'rgba(239, 68, 68, 0.2)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.3)' }}
-                              >
-                                Remove
-                              </button>
-                            )}
+                            <button
+                              className="btn btn-sm btn-danger-soft"
+                              onClick={() => removeExperience(i)}
+                            >
+                              Remove
+                            </button>
                           </div>
                           <div className="form-group">
-                            <label className="form-label">Company Name</label>
+                            <label className="form-label">Role</label>
                             <input
                               type="text"
                               className="form-control"
-                              placeholder="Acme Corporation"
-                              value={exp.company}
-                              onChange={e => updateExperience(i, 'company', e.target.value)}
+                              value={exp.role}
+                              onChange={e => updateExperience(i, 'role', e.target.value)}
                             />
                           </div>
                           <div className="form-group">
-                            <label className="form-label">Job Title / Role</label>
+                            <label className="form-label">Company</label>
                             <input
                               type="text"
                               className="form-control"
-                              placeholder="Software Engineer"
-                              value={exp.role}
-                              onChange={e => updateExperience(i, 'role', e.target.value)}
+                              value={exp.company}
+                              onChange={e => updateExperience(i, 'company', e.target.value)}
                             />
                           </div>
                           <div className="form-group">
@@ -623,14 +352,13 @@ export default function ResumeBuilder() {
                             <input
                               type="text"
                               className="form-control"
-                              placeholder="San Francisco, CA"
                               value={exp.location}
                               onChange={e => updateExperience(i, 'location', e.target.value)}
                             />
                           </div>
                           <div className="date-row">
                             <div className="form-group">
-                              <label className="form-label">Start Date</label>
+                              <label className="form-label">Start</label>
                               <input
                                 type="month"
                                 className="form-control"
@@ -639,7 +367,7 @@ export default function ResumeBuilder() {
                               />
                             </div>
                             <div className="form-group">
-                              <label className="form-label">End Date</label>
+                              <label className="form-label">End</label>
                               <input
                                 type="month"
                                 className="form-control"
@@ -649,62 +377,147 @@ export default function ResumeBuilder() {
                             </div>
                           </div>
                           <div className="form-group">
-                            <label className="form-label">Job Description & Achievements</label>
+                            <label className="form-label">Description</label>
                             <textarea
                               className="form-control"
                               rows={5}
-                              placeholder="Describe your responsibilities, achievements, and impact..."
                               value={exp.summary}
                               onChange={e => updateExperience(i, 'summary', e.target.value)}
                             />
                           </div>
                         </div>
                       ))}
-                      <button
-                        className="btn btn-secondary"
-                        onClick={addExperience}
-                        style={{ width: '100%', marginTop: '1rem' }}
-                      >
-                        + Add Another Experience
+                      <button className="btn btn-secondary w-100" onClick={addExperience}>
+                        + Add Experience
                       </button>
                     </div>
                   )}
 
-                  {/* STEP 4 - Education */}
+                  {/* STEP 4 - Projects (Was 5) */}
                   {step === 4 && (
+                    <div className="form-section">
+                      {projects.map((proj, i) => (
+                        <div key={i} className="entry-card">
+                          <div className="entry-card-header">
+                            <h4 style={{ margin: 0 }}>Project #{i + 1}</h4>
+                            <button className="btn btn-sm btn-danger-soft" onClick={() => removeProject(i)}>
+                              Remove
+                            </button>
+                          </div>
+                          <div className="form-group">
+                            <label className="form-label">Project Name</label>
+                            <input
+                              type="text"
+                              className="form-control"
+                              value={proj.name}
+                              onChange={e => updateProject(i, 'name', e.target.value)}
+                            />
+                          </div>
+                          <div className="form-group">
+                            <label className="form-label">Technologies</label>
+                            <input
+                              type="text"
+                              className="form-control"
+                              placeholder="React, Node.js, ..."
+                              value={proj.technologies}
+                              onChange={e => updateProject(i, 'technologies', e.target.value)}
+                            />
+                          </div>
+                          <div className="form-group">
+                            <label className="form-label">Link</label>
+                            <input
+                              type="url"
+                              className="form-control"
+                              value={proj.link}
+                              onChange={e => updateProject(i, 'link', e.target.value)}
+                            />
+                          </div>
+                          <div className="form-group">
+                            <label className="form-label">Description</label>
+                            <textarea
+                              className="form-control"
+                              rows={4}
+                              value={proj.description}
+                              onChange={e => updateProject(i, 'description', e.target.value)}
+                            />
+                          </div>
+                        </div>
+                      ))}
+                      <button className="btn btn-secondary w-100" onClick={addProject}>
+                        + Add Project
+                      </button>
+                    </div>
+                  )}
+
+                  {/* STEP 5 - Skills (Grouped) */}
+                  {step === 5 && (
+                    <div className="form-section">
+                      <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem' }}>
+                        Group your skills to make them scannable. E.g., &quot;Languages, Tools, Soft Skills&quot;.
+                      </p>
+                      {skillCategories.map((cat, i) => (
+                        <div key={i} className="entry-card">
+                          <div className="entry-card-header">
+                            <h4 style={{ margin: 0 }}>Skill Category #{i + 1}</h4>
+                            <button className="btn btn-sm btn-danger-soft" onClick={() => removeSkillCategory(i)}>
+                              Remove
+                            </button>
+                          </div>
+                          <div className="form-group">
+                            <label className="form-label">Category Name</label>
+                            <input
+                              type="text"
+                              className="form-control"
+                              placeholder="e.g. Cloud Platforms, DevOps, Programming Languages"
+                              value={cat.name}
+                              onChange={e => updateSkillCategory(i, 'name', e.target.value)}
+                            />
+                          </div>
+                          <div className="form-group">
+                            <label className="form-label">Skills (Comma Separated)</label>
+                            <textarea
+                              className="form-control"
+                              rows={3}
+                              placeholder="AWS, Azure, GCP, Docker, Kubernetes..."
+                              value={cat.skills}
+                              onChange={e => updateSkillCategory(i, 'skills', e.target.value)}
+                            />
+                          </div>
+                        </div>
+                      ))}
+                      <button className="btn btn-secondary w-100" onClick={addSkillCategory}>
+                        + Add Skill Category
+                      </button>
+                    </div>
+                  )}
+
+                  {/* STEP 6 - Education (Was 4) */}
+                  {step === 6 && (
                     <div className="form-section">
                       {education.map((edu, i) => (
                         <div key={i} className="entry-card">
                           <div className="entry-card-header">
                             <h4 style={{ margin: 0 }}>Education #{i + 1}</h4>
-                            {education.length > 1 && (
-                              <button
-                                className="btn btn-sm"
-                                onClick={() => removeEducation(i)}
-                                style={{ background: 'rgba(239, 68, 68, 0.2)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.3)' }}
-                              >
-                                Remove
-                              </button>
-                            )}
+                            <button className="btn btn-sm btn-danger-soft" onClick={() => removeEducation(i)}>
+                              Remove
+                            </button>
                           </div>
                           <div className="form-group">
-                            <label className="form-label">Institution Name</label>
+                            <label className="form-label">Degree</label>
                             <input
                               type="text"
                               className="form-control"
-                              placeholder="University of California"
-                              value={edu.institution}
-                              onChange={e => updateEducation(i, 'institution', e.target.value)}
+                              value={edu.degree}
+                              onChange={e => updateEducation(i, 'degree', e.target.value)}
                             />
                           </div>
                           <div className="form-group">
-                            <label className="form-label">Degree / Qualification</label>
+                            <label className="form-label">Institution</label>
                             <input
                               type="text"
                               className="form-control"
-                              placeholder="Bachelor of Science in Computer Science"
-                              value={edu.degree}
-                              onChange={e => updateEducation(i, 'degree', e.target.value)}
+                              value={edu.institution}
+                              onChange={e => updateEducation(i, 'institution', e.target.value)}
                             />
                           </div>
                           <div className="form-group">
@@ -712,14 +525,13 @@ export default function ResumeBuilder() {
                             <input
                               type="text"
                               className="form-control"
-                              placeholder="Berkeley, CA"
                               value={edu.location}
                               onChange={e => updateEducation(i, 'location', e.target.value)}
                             />
                           </div>
                           <div className="date-row">
                             <div className="form-group">
-                              <label className="form-label">Start Date</label>
+                              <label className="form-label">Start</label>
                               <input
                                 type="month"
                                 className="form-control"
@@ -728,7 +540,7 @@ export default function ResumeBuilder() {
                               />
                             </div>
                             <div className="form-group">
-                              <label className="form-label">End Date</label>
+                              <label className="form-label">End</label>
                               <input
                                 type="month"
                                 className="form-control"
@@ -738,152 +550,54 @@ export default function ResumeBuilder() {
                             </div>
                           </div>
                           <div className="form-group">
-                            <label className="form-label">GPA (Optional)</label>
+                            <label className="form-label">GPA</label>
                             <input
                               type="text"
                               className="form-control"
-                              placeholder="3.8/4.0 or 9.2/10"
                               value={edu.gpa}
                               onChange={e => updateEducation(i, 'gpa', e.target.value)}
                             />
                           </div>
-                          <div className="form-group">
-                            <label className="form-label">Additional Details (Optional)</label>
-                            <textarea
-                              className="form-control"
-                              rows={4}
-                              placeholder="Relevant coursework, honors, achievements, etc."
-                              value={edu.summary}
-                              onChange={e => updateEducation(i, 'summary', e.target.value)}
-                            />
-                          </div>
                         </div>
                       ))}
-                      <button
-                        className="btn btn-secondary"
-                        onClick={addEducation}
-                        style={{ width: '100%', marginTop: '1rem' }}
-                      >
-                        + Add Another Education
+                      <button className="btn btn-secondary w-100" onClick={addEducation}>
+                        + Add Education
                       </button>
                     </div>
                   )}
 
-                  {/* STEP 5 - Projects */}
-                  {step === 5 && (
+                  {/* STEP 7 - Certifications (Was 6) */}
+                  {step === 7 && (
                     <div className="form-section">
-                      <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem' }}>
-                        Showcase your projects, personal work, or academic projects. Great for freshers and developers!
-                      </p>
-                      {projects.map((project, i) => (
-                        <div key={i} className="entry-card">
-                          <div className="entry-card-header">
-                            <h4 style={{ margin: 0 }}>Project #{i + 1}</h4>
-                            {projects.length > 1 && (
-                              <button
-                                className="btn btn-sm"
-                                onClick={() => removeProject(i)}
-                                style={{ background: 'rgba(239, 68, 68, 0.2)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.3)' }}
-                              >
-                                Remove
-                              </button>
-                            )}
-                          </div>
-                          <div className="form-group">
-                            <label className="form-label">Project Name</label>
-                            <input
-                              type="text"
-                              className="form-control"
-                              placeholder="E-commerce Website"
-                              value={project.name}
-                              onChange={e => updateProject(i, 'name', e.target.value)}
-                            />
-                          </div>
-                          <div className="form-group">
-                            <label className="form-label">Description</label>
-                            <textarea
-                              className="form-control"
-                              rows={4}
-                              placeholder="Describe what the project does, key features, and your role..."
-                              value={project.description}
-                              onChange={e => updateProject(i, 'description', e.target.value)}
-                            />
-                          </div>
-                          <div className="form-group">
-                            <label className="form-label">Technologies Used</label>
-                            <input
-                              type="text"
-                              className="form-control"
-                              placeholder="React, Node.js, MongoDB, AWS"
-                              value={project.technologies}
-                              onChange={e => updateProject(i, 'technologies', e.target.value)}
-                            />
-                          </div>
-                          <div className="form-group">
-                            <label className="form-label">Project Link (Optional)</label>
-                            <input
-                              type="url"
-                              className="form-control"
-                              placeholder="https://github.com/username/project or https://project-demo.com"
-                              value={project.link}
-                              onChange={e => updateProject(i, 'link', e.target.value)}
-                            />
-                          </div>
-                        </div>
-                      ))}
-                      <button
-                        className="btn btn-secondary"
-                        onClick={addProject}
-                        style={{ width: '100%', marginTop: '1rem' }}
-                      >
-                        + Add Another Project
-                      </button>
-                    </div>
-                  )}
-
-                  {/* STEP 6 - Certifications */}
-                  {step === 6 && (
-                    <div className="form-section">
-                      <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem' }}>
-                        Add your professional certifications, online courses, or training programs.
-                      </p>
                       {certifications.map((cert, i) => (
                         <div key={i} className="entry-card">
                           <div className="entry-card-header">
                             <h4 style={{ margin: 0 }}>Certification #{i + 1}</h4>
-                            {certifications.length > 1 && (
-                              <button
-                                className="btn btn-sm"
-                                onClick={() => removeCertification(i)}
-                                style={{ background: 'rgba(239, 68, 68, 0.2)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.3)' }}
-                              >
-                                Remove
-                              </button>
-                            )}
+                            <button className="btn btn-sm btn-danger-soft" onClick={() => removeCertification(i)}>
+                              Remove
+                            </button>
                           </div>
                           <div className="form-group">
-                            <label className="form-label">Certification Name</label>
+                            <label className="form-label">Name</label>
                             <input
                               type="text"
                               className="form-control"
-                              placeholder="AWS Certified Solutions Architect"
                               value={cert.name}
                               onChange={e => updateCertification(i, 'name', e.target.value)}
                             />
                           </div>
                           <div className="form-group">
-                            <label className="form-label">Issuing Organization</label>
+                            <label className="form-label">Issuer</label>
                             <input
                               type="text"
                               className="form-control"
-                              placeholder="Amazon Web Services"
                               value={cert.issuer}
                               onChange={e => updateCertification(i, 'issuer', e.target.value)}
                             />
                           </div>
                           <div className="date-row">
                             <div className="form-group">
-                              <label className="form-label">Issue Date</label>
+                              <label className="form-label">Date</label>
                               <input
                                 type="month"
                                 className="form-control"
@@ -891,236 +605,156 @@ export default function ResumeBuilder() {
                                 onChange={e => updateCertification(i, 'date', e.target.value)}
                               />
                             </div>
-                            <div className="form-group">
-                              <label className="form-label">Expiry Date (Optional)</label>
-                              <input
-                                type="month"
-                                className="form-control"
-                                placeholder="Leave empty if no expiry"
-                                value={cert.expiryDate}
-                                onChange={e => updateCertification(i, 'expiryDate', e.target.value)}
-                              />
-                            </div>
                           </div>
                         </div>
                       ))}
-                      <button
-                        className="btn btn-secondary"
-                        onClick={addCertification}
-                        style={{ width: '100%', marginTop: '1rem' }}
-                      >
-                        + Add Another Certification
+                      <button className="btn btn-secondary w-100" onClick={addCertification}>
+                        + Add Certification
                       </button>
                     </div>
                   )}
 
-                  {/* STEP 7 - Languages, Awards & Skills */}
-                  {step === 7 && (
-                    <div className="form-section">
-                      {/* Languages */}
-                      <div style={{ marginBottom: '2rem' }}>
-                        <h3 style={{ marginBottom: '1rem', fontSize: '1.25rem' }}>Languages</h3>
-                        {languages.map((lang, i) => (
-                          <div key={i} className="entry-card" style={{ marginBottom: '1rem' }}>
-                            <div className="entry-card-header">
-                              <h4 style={{ margin: 0 }}>Language #{i + 1}</h4>
-                              {languages.length > 1 && (
-                                <button
-                                  className="btn btn-sm"
-                                  onClick={() => removeLanguage(i)}
-                                  style={{ background: 'rgba(239, 68, 68, 0.2)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.3)' }}
-                                >
-                                  Remove
-                                </button>
-                              )}
-                            </div>
-                            <div className="date-row">
-                              <div className="form-group">
-                                <label className="form-label">Language</label>
-                                <input
-                                  type="text"
-                                  className="form-control"
-                                  placeholder="English"
-                                  value={lang.name}
-                                  onChange={e => updateLanguage(i, 'name', e.target.value)}
-                                />
-                              </div>
-                              <div className="form-group">
-                                <label className="form-label">Proficiency Level</label>
-                                <select
-                                  className="form-control"
-                                  value={lang.proficiency}
-                                  onChange={e => updateLanguage(i, 'proficiency', e.target.value)}
-                                >
-                                  <option value="">Select proficiency</option>
-                                  <option value="Native">Native</option>
-                                  <option value="Fluent">Fluent</option>
-                                  <option value="Professional">Professional</option>
-                                  <option value="Intermediate">Intermediate</option>
-                                  <option value="Basic">Basic</option>
-                                </select>
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                        <button
-                          className="btn btn-secondary"
-                          onClick={addLanguage}
-                          style={{ width: '100%', marginTop: '0.5rem' }}
-                        >
-                          + Add Another Language
-                        </button>
-                      </div>
-
-                      {/* Awards */}
-                      <div style={{ marginBottom: '2rem' }}>
-                        <h3 style={{ marginBottom: '1rem', fontSize: '1.25rem' }}>Awards & Achievements</h3>
-                        {awards.map((award, i) => (
-                          <div key={i} className="entry-card" style={{ marginBottom: '1rem' }}>
-                            <div className="entry-card-header">
-                              <h4 style={{ margin: 0 }}>Award #{i + 1}</h4>
-                              {awards.length > 1 && (
-                                <button
-                                  className="btn btn-sm"
-                                  onClick={() => removeAward(i)}
-                                  style={{ background: 'rgba(239, 68, 68, 0.2)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.3)' }}
-                                >
-                                  Remove
-                                </button>
-                              )}
-                            </div>
-                            <div className="form-group">
-                              <label className="form-label">Award Title</label>
-                              <input
-                                type="text"
-                                className="form-control"
-                                placeholder="Employee of the Year"
-                                value={award.title}
-                                onChange={e => updateAward(i, 'title', e.target.value)}
-                              />
-                            </div>
-                            <div className="date-row">
-                              <div className="form-group">
-                                <label className="form-label">Issuing Organization</label>
-                                <input
-                                  type="text"
-                                  className="form-control"
-                                  placeholder="Company Name"
-                                  value={award.issuer}
-                                  onChange={e => updateAward(i, 'issuer', e.target.value)}
-                                />
-                              </div>
-                              <div className="form-group">
-                                <label className="form-label">Date</label>
-                                <input
-                                  type="month"
-                                  className="form-control"
-                                  value={award.date}
-                                  onChange={e => updateAward(i, 'date', e.target.value)}
-                                />
-                              </div>
-                            </div>
-                            <div className="form-group">
-                              <label className="form-label">Description (Optional)</label>
-                              <textarea
-                                className="form-control"
-                                rows={3}
-                                placeholder="Brief description of the achievement..."
-                                value={award.description}
-                                onChange={e => updateAward(i, 'description', e.target.value)}
-                              />
-                            </div>
-                          </div>
-                        ))}
-                        <button
-                          className="btn btn-secondary"
-                          onClick={addAward}
-                          style={{ width: '100%', marginTop: '0.5rem' }}
-                        >
-                          + Add Another Award
-                        </button>
-                      </div>
-
-                      {/* Skills */}
-                      <div>
-                        <h3 style={{ marginBottom: '1rem', fontSize: '1.25rem' }}>Skills & Expertise</h3>
-                        <div className="form-group">
-                          <label htmlFor="skills" className="form-label">Technical & Soft Skills</label>
-                          <textarea
-                            id="skills"
-                            className="form-control"
-                            rows={8}
-                            placeholder="Enter your skills separated by commas. Example: JavaScript, React, Node.js, Python, MongoDB, Git, Agile Methodology, Leadership, Communication"
-                            value={skills}
-                            onChange={e => setSkills(e.target.value)}
-                          />
-                          <small style={{ display: 'block', marginTop: '0.5rem', color: 'var(--text-secondary)' }}>
-                            Tip: Include technical skills, programming languages, tools, frameworks, and soft skills
-                          </small>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* STEP 8 - Preview */}
+                  {/* STEP 8 - Languages & Awards */}
                   {step === 8 && (
                     <div className="form-section">
-                      <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-                        <h3 style={{ marginBottom: '1rem' }}>Your Resume is Ready!</h3>
-                        <p style={{ color: 'var(--text-secondary)', marginBottom: '1rem' }}>
-                          Review your information below and download your professional resume as a PDF.
-                        </p>
-                        <div style={{
-                          background: 'rgba(102, 126, 234, 0.1)',
-                          padding: '1rem',
-                          borderRadius: '8px',
-                          marginBottom: '1.5rem',
-                          border: '1px solid rgba(102, 126, 234, 0.2)'
-                        }}>
-                          <p style={{ margin: 0, fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
-                            💡 <strong>Tip:</strong> Scroll down to see the full preview. The preview shows exactly how your resume will look when downloaded.
-                          </p>
+                      <h3>Languages</h3>
+                      {languages.map((lang, i) => (
+                        <div key={i} className="entry-card">
+                          <div className="entry-card-header">
+                            <h4 style={{ margin: 0 }}>Language #{i + 1}</h4>
+                            <button className="btn btn-sm btn-danger-soft" onClick={() => removeLanguage(i)}>
+                              Remove
+                            </button>
+                          </div>
+                          <div className="form-group">
+                            <input
+                              type="text"
+                              className="form-control"
+                              placeholder="Language"
+                              value={lang.name}
+                              onChange={e => updateLanguage(i, 'name', e.target.value)}
+                            />
+                          </div>
+                          <div className="form-group">
+                            <select
+                              className="form-control"
+                              value={lang.proficiency}
+                              onChange={e => updateLanguage(i, 'proficiency', e.target.value)}
+                            >
+                              <option value="">Select proficiency</option>
+                              <option value="Native">Native</option>
+                              <option value="Fluent">Fluent</option>
+                              <option value="Professional">Professional</option>
+                              <option value="Intermediate">Intermediate</option>
+                              <option value="Basic">Basic</option>
+                            </select>
+                          </div>
                         </div>
-                        <button
-                          className="btn btn-primary btn-lg glow"
-                          onClick={handleDownloadPDF}
-                          style={{ minWidth: '200px', fontSize: '1.125rem', padding: '1rem 2rem' }}
-                        >
-                          📥 Download Resume PDF
-                        </button>
-                      </div>
-                      <div className="preview-section">
-                        <div className="preview-header">
-                          <h4>📄 Resume Preview</h4>
-                          <p style={{ margin: '0.5rem 0 0 0', fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
-                            This is how your resume will appear when downloaded
-                          </p>
+                      ))}
+                      <button className="btn btn-secondary w-100 mb-4" onClick={addLanguage}>
+                        + Add Language
+                      </button>
+
+                      <h3>Awards</h3>
+                      {awards.map((award, i) => (
+                        <div key={i} className="entry-card">
+                          <div className="entry-card-header">
+                            <h4 style={{ margin: 0 }}>Award #{i + 1}</h4>
+                            <button className="btn btn-sm btn-danger-soft" onClick={() => removeAward(i)}>
+                              Remove
+                            </button>
+                          </div>
+                          <div className="form-group">
+                            <input
+                              type="text"
+                              className="form-control"
+                              placeholder="Title"
+                              value={award.title}
+                              onChange={e => updateAward(i, 'title', e.target.value)}
+                            />
+                          </div>
+                          <div className="form-group">
+                            <input
+                              type="text"
+                              className="form-control"
+                              placeholder="Issuer"
+                              value={award.issuer}
+                              onChange={e => updateAward(i, 'issuer', e.target.value)}
+                            />
+                          </div>
                         </div>
-                        <div className="preview-content">
-                          <ResumePDF data={{
-                            personal,
-                            summary,
-                            experiences,
-                            education,
-                            projects,
-                            certifications,
-                            languages,
-                            awards,
-                            skills
-                          }} />
+                      ))}
+                      <button className="btn btn-secondary w-100" onClick={addAward}>
+                        + Add Award
+                      </button>
+                    </div>
+                  )}
+
+                  {/* STEP 9 - Choose Template */}
+                  {step === 9 && (
+                    <div className="form-section text-center">
+                      <h3 className="mb-4">Choose Your Resume Template</h3>
+                      <div className="row">
+                        <div className="col-md-6 mb-3">
+                          <div
+                            className={`card p-4 ${selectedTemplate === 'classic' ? 'border-primary' : ''}`}
+                            onClick={() => setSelectedTemplate('classic')}
+                            style={{ cursor: 'pointer', border: selectedTemplate === 'classic' ? '2px solid #667eea' : '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)' }}
+                          >
+                            <h4 style={{ color: selectedTemplate === 'classic' ? '#667eea' : 'inherit' }}>Classic</h4>
+                            <p style={{ color: 'var(--text-secondary)' }}>Clean, minimal, ATS-friendly. Best for general applications.</p>
+                          </div>
+                        </div>
+                        <div className="col-md-6 mb-3">
+                          <div
+                            className={`card p-4 ${selectedTemplate === 'modern' ? 'border-primary' : ''}`}
+                            onClick={() => setSelectedTemplate('modern')}
+                            style={{ cursor: 'pointer', border: selectedTemplate === 'modern' ? '2px solid #667eea' : '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)' }}
+                          >
+                            <h4 style={{ color: selectedTemplate === 'modern' ? '#667eea' : 'inherit' }}>Modern Professional</h4>
+                            <p style={{ color: 'var(--text-secondary)' }}>Sidebar layout with clean spacing. Great for corporate roles.</p>
+                          </div>
+                        </div>
+                        <div className="col-md-6 mb-3">
+                          <div
+                            className={`card p-4 ${selectedTemplate === 'tech' ? 'border-primary' : ''}`}
+                            onClick={() => setSelectedTemplate('tech')}
+                            style={{ cursor: 'pointer', border: selectedTemplate === 'tech' ? '2px solid #667eea' : '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)' }}
+                          >
+                            <h4 style={{ color: selectedTemplate === 'tech' ? '#667eea' : 'inherit' }}>Tech Focused</h4>
+                            <p style={{ color: 'var(--text-secondary)' }}>Highlights skills and projects. Perfect for developers.</p>
+                          </div>
+                        </div>
+                        <div className="col-md-6 mb-3">
+                          <div
+                            className={`card p-4 ${selectedTemplate === 'academic' ? 'border-primary' : ''}`}
+                            onClick={() => setSelectedTemplate('academic')}
+                            style={{ cursor: 'pointer', border: selectedTemplate === 'academic' ? '2px solid #667eea' : '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)' }}
+                          >
+                            <h4 style={{ color: selectedTemplate === 'academic' ? '#667eea' : 'inherit' }}>Academic / CV</h4>
+                            <p style={{ color: 'var(--text-secondary)' }}>Education-first layout with serif fonts. For research & academia.</p>
+                          </div>
                         </div>
                       </div>
                     </div>
                   )}
 
-                  {/* Navigation Buttons */}
+                  {/* STEP 10 - Preview */}
+                  {step === 10 && (
+                    <div className="form-section">
+                      <div style={{ height: '800px', background: '#525659', borderRadius: '8px', overflow: 'hidden' }}>
+                        <ResumePreview data={resumeData} template={selectedTemplate} />
+                      </div>
+                    </div>
+                  )}
+
                   <div className="form-navigation">
                     {step > 1 && (
                       <button className="btn btn-secondary" onClick={back}>
                         ← Back
                       </button>
                     )}
-                    {step < 8 && (
+                    {step < 10 && (
                       <button className="btn btn-primary" onClick={next} style={{ marginLeft: 'auto' }}>
                         Next →
                       </button>
@@ -1134,188 +768,21 @@ export default function ResumeBuilder() {
       </section>
 
       <style jsx>{`
-        .steps-indicator {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          position: relative;
-          padding: 0 1rem;
-        }
-
-        .steps-indicator::before {
-          content: '';
-          position: absolute;
-          top: 20px;
-          left: 10%;
-          right: 10%;
-          height: 2px;
-          background: rgba(255, 255, 255, 0.1);
-          z-index: 0;
-        }
-
-        .step-item {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          gap: 0.5rem;
-          position: relative;
-          z-index: 1;
-        }
-
-        .step-number {
-          width: 40px;
-          height: 40px;
-          border-radius: 50%;
-          background: rgba(255, 255, 255, 0.1);
-          border: 2px solid rgba(255, 255, 255, 0.2);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-weight: 600;
-          transition: all 0.3s ease;
-        }
-
-        .step-item.active .step-number {
-          background: var(--primary-gradient);
-          border-color: transparent;
-          box-shadow: 0 0 20px rgba(102, 126, 234, 0.5);
-        }
-
-        .step-item.completed .step-number {
-          background: var(--success-color);
-          border-color: transparent;
-        }
-
-        .step-label {
-          font-size: 0.75rem;
-          color: var(--text-secondary);
-          text-transform: uppercase;
-          letter-spacing: 0.05em;
-          font-weight: 600;
-        }
-
-        .step-item.active .step-label {
-          color: var(--text-primary);
-        }
-
-        .form-section {
-          padding: 1rem 0;
-        }
-
-        .entry-card {
-          background: rgba(255, 255, 255, 0.03);
-          border: 1px solid rgba(255, 255, 255, 0.1);
-          border-radius: 12px;
-          padding: 1.5rem;
-          margin-bottom: 1.5rem;
-        }
-
-        .entry-card-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          margin-bottom: 1.5rem;
-          padding-bottom: 1rem;
-          border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .date-row {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 1rem;
-        }
-
-        .form-navigation {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          margin-top: 2rem;
-          padding-top: 2rem;
-          border-top: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .preview-section {
-          margin-top: 2rem;
-          border: 2px solid rgba(102, 126, 234, 0.3);
-          border-radius: 12px;
-          overflow: hidden;
-          box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
-        }
-
-        .preview-header {
-          background: rgba(102, 126, 234, 0.15);
-          padding: 1rem 1.5rem;
-          border-bottom: 2px solid rgba(102, 126, 234, 0.3);
-        }
-
-        .preview-header h4 {
-          margin: 0;
-          color: var(--text-primary);
-          font-size: 1.125rem;
-        }
-
-        .preview-content {
-          background: #ffffff !important;
-          padding: 2rem;
-          max-height: 600px;
-          overflow-y: auto;
-          box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.05);
-          position: relative;
-        }
-
-        .preview-content::-webkit-scrollbar {
-          width: 8px;
-        }
-
-        .preview-content::-webkit-scrollbar-track {
-          background: #f1f1f1;
-        }
-
-        .preview-content::-webkit-scrollbar-thumb {
-          background: #888;
-          border-radius: 4px;
-        }
-
-        .preview-content::-webkit-scrollbar-thumb:hover {
-          background: #555;
-        }
-
-        @media (max-width: 768px) {
-          .steps-indicator {
-            flex-wrap: wrap;
-            gap: 1rem;
-          }
-
-          .steps-indicator::before {
-            display: none;
-          }
-
-          .date-row {
-            grid-template-columns: 1fr;
-          }
-
-          .form-navigation {
-            flex-direction: column;
-            gap: 1rem;
-          }
-
-          .form-navigation button {
-            width: 100%;
-          }
-
-          .preview-content {
-            padding: 1rem;
-          }
-
-          .preview-content #resume-pdf {
-            padding: 15mm;
-            font-size: 10px;
-          }
-
-          .preview-section {
-            margin-top: 1.5rem;
-          }
-        }
+        .steps-indicator { display: flex; justify-content: space-between; align-items: center; position: relative; padding: 0 1rem; margin-bottom: 2rem; overflow-x: auto; }
+        .step-item { display: flex; flexDirection: column; align-items: center; gap: 0.5rem; position: relative; z-index: 1; min-width: 50px; }
+        .step-number { width: 32px; height: 32px; border-radius: 50%; background: rgba(255, 255, 255, 0.1); display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 0.875rem; }
+        .step-item.active .step-number { background: var(--primary-gradient, #667eea); box-shadow: 0 0 10px rgba(102, 126, 234, 0.5); }
+        .step-item.completed .step-number { background: #10b981; }
+        .step-label { font-size: 0.75rem; color: var(--text-secondary); margin-top: 4px; }
+        .step-item.active .step-label { color: var(--text-primary); font-weight: bold; }
+        .form-section { padding: 1rem 0; }
+        .entry-card { background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem; }
+        .entry-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid rgba(255, 255, 255, 0.1); }
+        .date-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+        .form-navigation { display: flex; justify-content: space-between; margin-top: 2rem; }
+        .btn-danger-soft { background: rgba(239, 68, 68, 0.2); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); }
+        :global(.form-control) { background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); color: white; padding: 0.75rem; border-radius: 6px; width: 100%; margin-bottom: 1rem; }
+        :global(.form-label) { display: block; margin-bottom: 0.5rem; color: var(--text-secondary); font-size: 0.875rem; }
       `}</style>
     </main>
   );
