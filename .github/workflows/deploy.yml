@@ -35,7 +35,7 @@ jobs:
 
       # 6️⃣ Build Next.js project
       - name: Build project
-        run: npm run build
+        run: npm run build --webpack   # force webpack to avoid Turbopack issues
 
       # 7️⃣ Deploy to Vercel
       - name: Deploy to Vercel
