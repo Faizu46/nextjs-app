@@ -4,6 +4,7 @@ import { useState } from 'react';
 import dynamic from 'next/dynamic';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
+import { PDFDownloadLink } from '@react-pdf/renderer';
 import {
   ResumeData,
   PersonalInfo,
@@ -16,6 +17,7 @@ import {
   Award,
   SkillCategory
 } from '../../types/resume';
+import { MinimalAtsTemplate, ExecutiveTemplate, DeveloperAtsTemplate } from '../../components/resume-templates';
 
 const ResumePreview = dynamic(() => import('../../components/ResumePreview'), { ssr: false });
 
@@ -169,6 +171,20 @@ export default function ResumeBuilder() {
     languages,
     awards,
     skillCategories
+  };
+
+  // Get template document for download
+  const getTemplateDocument = () => {
+    switch (selectedTemplate) {
+      case 'minimal':
+        return <MinimalAtsTemplate data={resumeData} />;
+      case 'executive':
+        return <ExecutiveTemplate data={resumeData} />;
+      case 'developer':
+        return <DeveloperAtsTemplate data={resumeData} />;
+      default:
+        return <MinimalAtsTemplate data={resumeData} />;
+    }
   };
 
   /* ================= UI ================= */
@@ -732,8 +748,33 @@ export default function ResumeBuilder() {
                   {/* STEP 10 - Preview */}
                   {step === 10 && (
                     <div className="form-section">
-                      <div style={{ height: '800px', background: '#525659', borderRadius: '8px', overflow: 'hidden' }}>
+                      <div className="preview-container" style={{
+                        height: '800px',
+                        minHeight: '500px',
+                        maxHeight: '90vh',
+                        background: '#525659',
+                        borderRadius: '8px',
+                        overflow: 'auto'
+                      }}>
                         <ResumePreview data={resumeData} template={selectedTemplate} />
+                      </div>
+
+                      {/* Download Button */}
+                      <div className="download-section" style={{ marginTop: '1.5rem', textAlign: 'center' }}>
+                        <PDFDownloadLink
+                          document={getTemplateDocument()}
+                          fileName={`${personal.fullName || 'resume'}_resume.pdf`}
+                          className="btn btn-primary download-btn"
+                          style={{
+                            padding: '1rem 2rem',
+                            fontSize: '1.1rem',
+                            fontWeight: '600',
+                            display: 'inline-block',
+                            textDecoration: 'none'
+                          }}
+                        >
+                          {({ loading }) => (loading ? '⏳ Preparing PDF...' : '📥 Download Resume PDF')}
+                        </PDFDownloadLink>
                       </div>
                     </div>
                   )}
@@ -771,8 +812,49 @@ export default function ResumeBuilder() {
         .date-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
         .form-navigation { display: flex; justify-content: space-between; margin-top: 2rem; }
         .btn-danger-soft { background: rgba(239, 68, 68, 0.2); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); }
-        :global(.form-control) { background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); color: white; padding: 0.75rem; border-radius: 6px; width: 100%; margin-bottom: 1rem; }
+        :global(.form-control) { background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); color: white; padding: 0.75rem; border-radius: 6px; width: 100%; margin-bottom: 1rem; font-size: 16px; }
         :global(.form-label) { display: block; margin-bottom: 0.5rem; color: var(--text-secondary); font-size: 0.875rem; }
+        
+        .download-btn {
+          transition: all 0.3s ease;
+        }
+        .download-btn:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+        
+        @media (max-width: 768px) {
+          .preview-container {
+            height: auto !important;
+            min-height: 500px !important;
+            max-height: 80vh !important;
+          }
+          .steps-indicator {
+            padding: 0 0.5rem;
+          }
+          .step-label {
+            display: none;
+          }
+          .download-btn {
+            width: 100% !important;
+            padding: 1.25rem !important;
+            font-size: 1.1rem !important;
+          }
+          .form-navigation {
+            flex-direction: column;
+            gap: 0.75rem;
+          }
+          .form-navigation .btn {
+            width: 100%;
+            margin: 0 !important;
+          }
+          .card-body {
+            padding: 1rem;
+          }
+          :global(.form-control) {
+            font-size: 16px !important;
+          }
+        }
       `}</style>
     </main>
   );

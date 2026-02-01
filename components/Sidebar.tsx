@@ -12,6 +12,13 @@ export default function Sidebar() {
   const { data: session } = useSession();
   const [isCollapsed, setIsCollapsed] = useState(false);
 
+  // Hide sidebar on auth pages
+  const isAuthPage = pathname === '/login' || pathname === '/register';
+
+  if (isAuthPage) {
+    return null;
+  }
+
   const isActive = (path: string) => {
     return pathname === path ? 'active' : '';
   };
