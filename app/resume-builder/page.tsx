@@ -68,7 +68,7 @@ export default function ResumeBuilder() {
     { name: 'Soft Skills', skills: '' }
   ]);
 
-  const [selectedTemplate, setSelectedTemplate] = useState('classic');
+  const [selectedTemplate, setSelectedTemplate] = useState('minimal');
 
   /* ================= HELPERS ================= */
 
@@ -697,42 +697,32 @@ export default function ResumeBuilder() {
                       <div className="row">
                         <div className="col-md-6 mb-3">
                           <div
-                            className={`card p-4 ${selectedTemplate === 'classic' ? 'border-primary' : ''}`}
-                            onClick={() => setSelectedTemplate('classic')}
-                            style={{ cursor: 'pointer', border: selectedTemplate === 'classic' ? '2px solid #667eea' : '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)' }}
+                            className={`card p-4 ${selectedTemplate === 'minimal' ? 'border-primary' : ''}`}
+                            onClick={() => setSelectedTemplate('minimal')}
+                            style={{ cursor: 'pointer', border: selectedTemplate === 'minimal' ? '2px solid #667eea' : '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)' }}
                           >
-                            <h4 style={{ color: selectedTemplate === 'classic' ? '#667eea' : 'inherit' }}>Classic</h4>
-                            <p style={{ color: 'var(--text-secondary)' }}>Clean, minimal, ATS-friendly. Best for general applications.</p>
+                            <h4 style={{ color: selectedTemplate === 'minimal' ? '#667eea' : 'inherit' }}>Minimal ATS</h4>
+                            <p style={{ color: 'var(--text-secondary)' }}>Maximum density, ATS optimized. Great for ATS systems.</p>
                           </div>
                         </div>
                         <div className="col-md-6 mb-3">
                           <div
-                            className={`card p-4 ${selectedTemplate === 'modern' ? 'border-primary' : ''}`}
-                            onClick={() => setSelectedTemplate('modern')}
-                            style={{ cursor: 'pointer', border: selectedTemplate === 'modern' ? '2px solid #667eea' : '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)' }}
+                            className={`card p-4 ${selectedTemplate === 'executive' ? 'border-primary' : ''}`}
+                            onClick={() => setSelectedTemplate('executive')}
+                            style={{ cursor: 'pointer', border: selectedTemplate === 'executive' ? '2px solid #667eea' : '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)' }}
                           >
-                            <h4 style={{ color: selectedTemplate === 'modern' ? '#667eea' : 'inherit' }}>Modern Professional</h4>
-                            <p style={{ color: 'var(--text-secondary)' }}>Sidebar layout with clean spacing. Great for corporate roles.</p>
+                            <h4 style={{ color: selectedTemplate === 'executive' ? '#667eea' : 'inherit' }}>Executive</h4>
+                            <p style={{ color: 'var(--text-secondary)' }}>Formal layout with strong hierarchy. Perfect for leadership roles.</p>
                           </div>
                         </div>
                         <div className="col-md-6 mb-3">
                           <div
-                            className={`card p-4 ${selectedTemplate === 'tech' ? 'border-primary' : ''}`}
-                            onClick={() => setSelectedTemplate('tech')}
-                            style={{ cursor: 'pointer', border: selectedTemplate === 'tech' ? '2px solid #667eea' : '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)' }}
+                            className={`card p-4 ${selectedTemplate === 'developer' ? 'border-primary' : ''}`}
+                            onClick={() => setSelectedTemplate('developer')}
+                            style={{ cursor: 'pointer', border: selectedTemplate === 'developer' ? '2px solid #667eea' : '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)' }}
                           >
-                            <h4 style={{ color: selectedTemplate === 'tech' ? '#667eea' : 'inherit' }}>Tech Focused</h4>
-                            <p style={{ color: 'var(--text-secondary)' }}>Highlights skills and projects. Perfect for developers.</p>
-                          </div>
-                        </div>
-                        <div className="col-md-6 mb-3">
-                          <div
-                            className={`card p-4 ${selectedTemplate === 'academic' ? 'border-primary' : ''}`}
-                            onClick={() => setSelectedTemplate('academic')}
-                            style={{ cursor: 'pointer', border: selectedTemplate === 'academic' ? '2px solid #667eea' : '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)' }}
-                          >
-                            <h4 style={{ color: selectedTemplate === 'academic' ? '#667eea' : 'inherit' }}>Academic / CV</h4>
-                            <p style={{ color: 'var(--text-secondary)' }}>Education-first layout with serif fonts. For research & academia.</p>
+                            <h4 style={{ color: selectedTemplate === 'developer' ? '#667eea' : 'inherit' }}>Developer</h4>
+                            <p style={{ color: 'var(--text-secondary)' }}>Technical focus with clean formatting. Optimized for tech roles.</p>
                           </div>
                         </div>
                       </div>

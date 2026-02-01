@@ -5,51 +5,70 @@ import { ResumeData } from '../../types/resume';
 const styles = StyleSheet.create({
     page: {
         padding: 0,
-        fontFamily: 'Inter',
+        fontFamily: 'Helvetica',
         fontSize: 10,
         lineHeight: 1.5,
         flexDirection: 'row',
     },
     leftColumn: {
         width: '35%',
-        backgroundColor: '#f4f6f8',
+        backgroundColor: '#1a365d', // Dark Blue Sidebar (Premium)
         padding: 20,
         height: '100%',
+        color: '#ffffff', // White text
     },
     rightColumn: {
         width: '65%',
-        padding: 20,
+        padding: 25,
         height: '100%',
+        backgroundColor: '#ffffff',
     },
     name: {
-        fontSize: 22,
+        fontSize: 24,
         fontWeight: 'bold',
-        marginBottom: 5,
-        color: '#2d3748',
+        marginBottom: 10,
+        color: '#ffffff', // White name
+        textTransform: 'uppercase',
+        letterSpacing: 1,
     },
     role: {
         fontSize: 14,
-        color: '#4a5568',
+        color: '#cbd5e0', // Light blue-grey
         marginBottom: 20,
     },
-
+    contactItem: {
+        fontSize: 9,
+        marginBottom: 6,
+        color: '#e2e8f0', // Off-white
+    },
     sectionTitle: {
-        fontSize: 12,
+        fontSize: 12, // Standard
         fontWeight: 'bold',
-        color: '#2b6cb0',
+        marginBottom: 10,
         textTransform: 'uppercase',
         letterSpacing: 1,
-        marginBottom: 10,
-        borderBottom: '1px solid #e2e8f0',
+        color: '#2d3748', // Dark text for right column
+        borderBottomWidth: 1, // Add underline for attractiveness
+        borderBottomColor: '#cbd5e0',
         paddingBottom: 4,
     },
+    sidebarSectionTitle: { // Special title for sidebar
+        fontSize: 12,
+        fontWeight: 'bold',
+        marginBottom: 10,
+        textTransform: 'uppercase',
+        letterSpacing: 1,
+        color: '#ffffff',
+        borderBottomWidth: 1,
+        borderBottomColor: '#4a5568', // Lighter border
+        paddingBottom: 4,
+    },
+    // ...
+
+
+
 
     // Left Column Styles
-    contactItem: {
-        marginBottom: 6,
-        color: '#4a5568',
-        fontSize: 9,
-    },
     skillGroup: {
         marginBottom: 10,
     },
@@ -103,45 +122,55 @@ export const ModernTemplate: React.FC<Props> = ({ data }) => {
                 {/* Left Sidebar */}
                 <View style={styles.leftColumn}>
                     <Text style={styles.name}>{personal.fullName}</Text>
-                    {experiences[0]?.role && <Text style={styles.role}>{experiences[0].role}</Text>}
+                    {experiences.length > 0 && experiences[0].role && <Text style={styles.role}>{experiences[0].role}</Text>}
 
                     <View style={{ marginBottom: 20 }}>
-                        {personal.email && <Text style={styles.contactItem}>{personal.email}</Text>}
-                        {personal.phone && <Text style={styles.contactItem}>{personal.phone}</Text>}
-                        {personal.location && <Text style={styles.contactItem}>{personal.location}</Text>}
-                        {personal.linkedin && <Text style={styles.contactItem}>{personal.linkedin}</Text>}
-                        {personal.website && <Text style={styles.contactItem}>{personal.website}</Text>}
-                    </View>
-
-                    {/* Education - in sidebar for Modern layout */}
-                    <View style={{ marginBottom: 20 }}>
-                        <Text style={styles.sectionTitle}>Education</Text>
-                        {education.map((edu, i) => (
-                            <View key={i} style={{ marginBottom: 10 }}>
-                                <Text style={{ fontWeight: 'bold' }}>{edu.degree}</Text>
-                                <Text>{edu.institution}</Text>
-                                <Text style={{ color: '#718096', fontSize: 9 }}>{edu.end}</Text>
-                            </View>
+                        {[
+                            personal.email,
+                            personal.phone,
+                            personal.location,
+                            personal.linkedin,
+                            personal.website
+                        ].filter(item => item && item.trim().length > 0).map((item, i) => (
+                            <Text key={i} style={styles.contactItem}>{item}</Text>
                         ))}
                     </View>
+
+                    {/* Education */}
+                    {education.length > 0 && education[0].institution && (
+                        <View style={{ marginBottom: 20 }}>
+                            <Text style={styles.sidebarSectionTitle}>Education</Text>
+                            {education.map((edu, i) => (
+                                <View key={i} style={{ marginBottom: 10 }}>
+                                    <Text style={{ fontWeight: 'bold', color: '#fff' }}>{edu.degree}</Text>
+                                    <Text style={{ color: '#cbd5e0' }}>{edu.institution}</Text>
+                                    <Text style={{ color: '#a0aec0', fontSize: 9 }}>{edu.start} - {edu.end}</Text>
+                                </View>
+                            ))}
+                        </View>
+                    )}
 
                     {/* Skills */}
-                    <View style={{ marginBottom: 20 }}>
-                        <Text style={styles.sectionTitle}>Skills</Text>
-                        {skillCategories.map((cat, i) => (
-                            <View key={i} style={styles.skillGroup}>
-                                <Text style={styles.skillCategory}>{cat.name}</Text>
-                                <Text style={styles.skillText}>{cat.skills}</Text>
-                            </View>
-                        ))}
-                    </View>
+                    {skillCategories.length > 0 && (
+                        <View style={{ marginBottom: 20 }}>
+                            <Text style={styles.sidebarSectionTitle}>Skills</Text>
+                            {skillCategories.map((cat, i) => (
+                                <View key={i} style={styles.skillGroup}>
+                                    <Text style={[styles.skillCategory, { color: '#fff' }]}>{cat.name}</Text>
+                                    <Text style={[styles.skillText, { color: '#cbd5e0' }]}>{cat.skills}</Text>
+                                </View>
+                            ))}
+                        </View>
+                    )}
 
                     {/* Languages */}
-                    {languages.length > 0 && (
+                    {languages.length > 0 && languages[0].name && (
                         <View>
-                            <Text style={styles.sectionTitle}>Languages</Text>
+                            <Text style={styles.sidebarSectionTitle}>Languages</Text>
                             {languages.map((l, i) => (
-                                <Text key={i} style={{ marginBottom: 4 }}>{l.name} - {l.proficiency}</Text>
+                                <Text key={i} style={{ marginBottom: 4, color: '#e2e8f0' }}>
+                                    {l.name} {l.proficiency ? `- ${l.proficiency}` : ''}
+                                </Text>
                             ))}
                         </View>
                     )}
@@ -151,10 +180,19 @@ export const ModernTemplate: React.FC<Props> = ({ data }) => {
                 {/* Right Main Column */}
                 <View style={styles.rightColumn}>
 
-                    {(summary.summary || summary.objective) && (
+                    {/* 1. Summary (Strictly first in main col if present) */}
+                    {summary.summary && summary.summary.trim().length > 0 && (
                         <View style={{ marginBottom: 20 }}>
-                            <Text style={styles.sectionTitle}>{summary.objective ? 'Objective' : 'Profile'}</Text>
-                            <Text style={styles.description}>{summary.summary || summary.objective}</Text>
+                            <Text style={styles.sectionTitle}>Professional Summary</Text>
+                            <Text style={styles.description}>{summary.summary}</Text>
+                        </View>
+                    )}
+
+                    {/* 2. Objective (Strictly second if present) */}
+                    {summary.objective && summary.objective.trim().length > 0 && (
+                        <View style={{ marginBottom: 20 }}>
+                            <Text style={styles.sectionTitle}>Objective</Text>
+                            <Text style={styles.description}>{summary.objective}</Text>
                         </View>
                     )}
 
@@ -168,7 +206,9 @@ export const ModernTemplate: React.FC<Props> = ({ data }) => {
                                         <Text style={styles.entryDate}>{exp.start} - {exp.end || 'Present'}</Text>
                                     </View>
                                     <Text style={[styles.entrySubtitle, { marginBottom: 4 }]}>{exp.company} | {exp.location}</Text>
-                                    <Text style={styles.description}>{exp.summary}</Text>
+                                    {exp.summary && exp.summary.trim().length > 0 && (
+                                        <Text style={styles.description}>{exp.summary}</Text>
+                                    )}
                                 </View>
                             ))}
                         </View>
@@ -183,7 +223,11 @@ export const ModernTemplate: React.FC<Props> = ({ data }) => {
                                         <Text style={styles.entryTitle}>{proj.name}</Text>
                                         {proj.link && <Text style={{ fontSize: 9, color: '#2b6cb0' }}>{proj.link}</Text>}
                                     </View>
-                                    <Text style={[styles.description, { fontStyle: 'italic', fontSize: 9, marginBottom: 2 }]}>{proj.technologies}</Text>
+                                    {proj.technologies && (
+                                        <Text style={[styles.description, { fontStyle: 'italic', fontSize: 9, marginBottom: 2 }]}>
+                                            {proj.technologies}
+                                        </Text>
+                                    )}
                                     <Text style={styles.description}>{proj.description}</Text>
                                 </View>
                             ))}

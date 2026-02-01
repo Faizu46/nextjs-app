@@ -1,10 +1,10 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  reactStrictMode: true,
-  // Add any custom webpack config if needed
   webpack: (config) => {
-    return config;
+    return config
   },
+  turbopack: {}, // 👈 THIS LINE SILENCES THE ERROR
 }
 
-module.exports = nextConfig;
+module.exports = nextConfig
+

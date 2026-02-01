@@ -1,7 +1,6 @@
 'use client';
-
 import { PDFViewer } from '@react-pdf/renderer';
-import { ClassicTemplate, ModernTemplate, TechTemplate, AcademicTemplate } from './resume-templates';
+import { ClassicTemplate, ModernTemplate, TechTemplate, AcademicTemplate, ExecutiveTemplate, MinimalAtsTemplate, DeveloperAtsTemplate } from './resume-templates';
 import { ResumeData } from '../types/resume';
 
 interface Props {
@@ -15,6 +14,9 @@ export default function ResumePreview({ data, template = 'classic' }: Props) {
             case 'modern': return <ModernTemplate data={data} />;
             case 'tech': return <TechTemplate data={data} />;
             case 'academic': return <AcademicTemplate data={data} />;
+            case 'executive': return <ExecutiveTemplate data={data} />;
+            case 'minimal': return <MinimalAtsTemplate data={data} />;
+            case 'developer': return <DeveloperAtsTemplate data={data} />;
             case 'classic':
             default:
                 return <ClassicTemplate data={data} />;

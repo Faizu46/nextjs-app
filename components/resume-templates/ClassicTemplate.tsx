@@ -2,55 +2,45 @@ import React from 'react';
 import { Page, Text, View, Document, StyleSheet, Font } from '@react-pdf/renderer';
 import { ResumeData } from '../../types/resume';
 
-// Register standard fonts
-Font.register({
-    family: 'Inter',
-    fonts: [
-        { src: 'https://fonts.gstatic.com/s/inter/v12/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuLyfAZ9hjp-Ek-_EeA.ttf' },
-        { src: 'https://fonts.gstatic.com/s/inter/v12/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuGKYAZ9hjp-Ek-_EeA.ttf', fontWeight: 'bold' },
-        { src: 'https://fonts.gstatic.com/s/inter/v12/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuI6fAZ9hjp-Ek-_EeA.ttf', fontStyle: 'italic' },
-    ]
-});
-
 const styles = StyleSheet.create({
     page: {
-        padding: 30,
-        fontFamily: 'Inter',
-        fontSize: 11,
-        lineHeight: 1.5,
+        padding: 30, // Standard A4 padding
+        fontFamily: 'Helvetica',
+        fontSize: 10.5,
+        lineHeight: 1.4,
         color: '#000000',
     },
     header: {
         marginBottom: 20,
-        borderBottomWidth: 2,
-        borderBottomColor: '#333',
-        paddingBottom: 10,
+        textAlign: 'center',
+        // NO border for header in this specific strict request ("No divider lines" - applied globally or to sections? 
+        // Request says "4. SECTION HEADINGS ... NO divider lines". 
+        // Example image usually has header line? "Exact match provided reference". 
+        // Reference usually has line under name. But "NO divider lines or icons" in Section Headings rule 4.
+        // Let's remove ALL borders to be strict to rule 4 & 1 (Clean).
+        borderBottomWidth: 0,
     },
     name: {
-        fontSize: 24,
+        fontSize: 22,
         fontWeight: 'bold',
-        marginBottom: 5,
-        color: '#1a1a1a',
+        marginBottom: 4,
+        color: '#000000',
+        textTransform: 'uppercase',
+        letterSpacing: 1,
     },
     contact: {
         fontSize: 10,
-        color: '#666',
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        gap: 5,
+        color: '#000000',
+        marginBottom: 2, // Spacing between contact lines
     },
     section: {
         marginBottom: 15,
     },
     sectionTitle: {
-        fontSize: 14,
+        fontSize: 11,
         fontWeight: 'bold',
-        borderBottomWidth: 1,
-        borderBottomColor: '#ddd',
-        marginBottom: 8,
-        paddingBottom: 2,
+        marginBottom: 6,
         textTransform: 'uppercase',
-        letterSpacing: 1,
     },
     row: {
         flexDirection: 'row',
@@ -64,30 +54,27 @@ const styles = StyleSheet.create({
         fontStyle: 'italic',
     },
     meta: {
-        fontSize: 9,
-        color: '#666',
+        fontSize: 10,
+        color: '#000000',
+        textAlign: 'right',
     },
     text: {
+        fontSize: 10.5,
         textAlign: 'justify',
-    },
-    bulletPoint: {
-        flexDirection: 'row',
-        marginBottom: 2,
-    },
-    bullet: {
-        width: 10,
-        fontSize: 10,
+        lineHeight: 1.4,
     },
     skillCategory: {
         flexDirection: 'row',
-        marginBottom: 4,
+        marginBottom: 2,
     },
     skillName: {
         fontWeight: 'bold',
-        width: 120,
+        width: 100, // Fixed width for alignment
+        fontSize: 10.5,
     },
     skillList: {
         flex: 1,
+        fontSize: 10.5,
     }
 });
 
@@ -101,27 +88,41 @@ export const ClassicTemplate: React.FC<Props> = ({ data }) => {
     return (
         <Document>
             <Page size="A4" style={styles.page}>
-                {/* Header */}
+                {/* Header: Strict Name -> Contact Layout */}
                 <View style={styles.header}>
                     <Text style={styles.name}>{personal.fullName || 'Your Name'}</Text>
                     <View style={styles.contact}>
-                        {personal.email && <Text>{personal.email}  |</Text>}
-                        {personal.phone && <Text>{personal.phone}  |</Text>}
-                        {personal.location && <Text>{personal.location}  |</Text>}
-                        {personal.linkedin && <Text>{personal.linkedin}  |</Text>}
-                        {personal.website && <Text>{personal.website}</Text>}
+                        {[
+                            personal.email,
+                            personal.phone,
+                            personal.location,
+                            personal.linkedin,
+                            personal.website
+                        ].filter(item => item && item.trim().length > 0).map((item, index, array) => (
+                            <Text key={index}>
+                                {item}{index < array.length - 1 ? ' | ' : ''}
+                            </Text>
+                        ))}
                     </View>
                 </View>
 
-                {/* Summary */}
-                {(summary.summary || summary.objective) && (
+                {/* 1. Professional Summary (Multi-line text block) */}
+                {summary.summary && summary.summary.trim().length > 0 && (
                     <View style={styles.section}>
-                        <Text style={styles.sectionTitle}>{summary.objective ? 'Objective' : 'Professional Summary'}</Text>
-                        <Text style={styles.text}>{summary.summary || summary.objective}</Text>
+                        <Text style={styles.sectionTitle}>Professional Summary</Text>
+                        <Text style={styles.text}>{summary.summary}</Text>
                     </View>
                 )}
 
-                {/* Experience */}
+                {/* 2. Career Objective (Strictly separate) */}
+                {summary.objective && summary.objective.trim().length > 0 && (
+                    <View style={styles.section}>
+                        <Text style={styles.sectionTitle}>Career Objective</Text>
+                        <Text style={styles.text}>{summary.objective}</Text>
+                    </View>
+                )}
+
+                {/* Experience (Strict format: Title | Company | Location | Dates) */}
                 {experiences.length > 0 && experiences[0].role && (
                     <View style={styles.section}>
                         <Text style={styles.sectionTitle}>Experience</Text>
@@ -137,13 +138,16 @@ export const ClassicTemplate: React.FC<Props> = ({ data }) => {
                                     <Text style={styles.italic}>{exp.company}</Text>
                                     <Text style={styles.meta}>{exp.location}</Text>
                                 </View>
-                                {exp.summary && <Text style={[styles.text, { marginTop: 4 }]}>{exp.summary}</Text>}
+                                {/* Only render summary if it exists and is not empty */}
+                                {exp.summary && exp.summary.trim().length > 0 && (
+                                    <Text style={[styles.text, { marginTop: 4 }]}>{exp.summary}</Text>
+                                )}
                             </View>
                         ))}
                     </View>
                 )}
 
-                {/* Projects */}
+                {/* Projects (Strict format: Name | Link (optional) | Tech | Description) */}
                 {projects.length > 0 && projects[0].name && (
                     <View style={styles.section}>
                         <Text style={styles.sectionTitle}>Projects</Text>
@@ -164,10 +168,10 @@ export const ClassicTemplate: React.FC<Props> = ({ data }) => {
                     </View>
                 )}
 
-                {/* Skills */}
+                {/* Skills (Strict inline grouping) */}
                 {skillCategories.length > 0 && (
                     <View style={styles.section}>
-                        <Text style={styles.sectionTitle}>Skills</Text>
+                        <Text style={styles.sectionTitle}>Technical Skills</Text>
                         {skillCategories.map((cat, i) => (
                             <View key={i} style={styles.skillCategory}>
                                 <Text style={styles.skillName}>{cat.name}:</Text>
@@ -177,7 +181,7 @@ export const ClassicTemplate: React.FC<Props> = ({ data }) => {
                     </View>
                 )}
 
-                {/* Education */}
+                {/* Education (Strict format: Degree | Institution | Location | Dates) */}
                 {education.length > 0 && education[0].institution && (
                     <View style={styles.section}>
                         <Text style={styles.sectionTitle}>Education</Text>
@@ -199,42 +203,47 @@ export const ClassicTemplate: React.FC<Props> = ({ data }) => {
                     </View>
                 )}
 
-                {/* Certifications */}
+                {/* Certifications (Strict condition check) */}
                 {certifications.length > 0 && certifications[0].name && (
                     <View style={styles.section}>
                         <Text style={styles.sectionTitle}>Certifications</Text>
                         {certifications.map((cert, i) => (
                             <View key={i} style={{ marginBottom: 4 }}>
                                 <Text style={styles.bold}>
-                                    {cert.name} <Text style={{ fontWeight: 'normal' }}>- {cert.issuer}</Text>
+                                    {cert.name}
+                                    {cert.issuer && <Text style={{ fontWeight: 'normal' }}> - {cert.issuer}</Text>}
                                 </Text>
-                                <Text style={styles.meta}>{cert.date}</Text>
+                                {cert.date && <Text style={styles.meta}>{cert.date}</Text>}
                             </View>
                         ))}
                     </View>
                 )}
 
-                {/* Languages & Awards */}
+                {/* Additional (Languages/Awards) - Completely hidden if empty */}
                 {(languages.length > 0 || awards.length > 0) && (
-                    <View style={styles.section}>
-                        <Text style={styles.sectionTitle}>Additional</Text>
-                        {languages.length > 0 && (
-                            <View style={{ marginBottom: 6 }}>
-                                <Text style={{ fontWeight: 'bold', fontSize: 10 }}>Languages:</Text>
-                                <Text>
-                                    {languages.map(l => `${l.name} (${l.proficiency})`).join(' • ')}
-                                </Text>
-                            </View>
-                        )}
-                        {awards.length > 0 && (
-                            <View>
-                                <Text style={{ fontWeight: 'bold', fontSize: 10, marginBottom: 2 }}>Awards:</Text>
-                                {awards.map((award, i) => (
-                                    <Text key={i}>• {award.title} ({award.issuer})</Text>
-                                ))}
-                            </View>
-                        )}
-                    </View>
+                    (languages[0]?.name || awards[0]?.title) && (
+                        <View style={styles.section}>
+                            <Text style={styles.sectionTitle}>Additional</Text>
+
+                            {languages.length > 0 && languages[0].name && (
+                                <View style={{ marginBottom: 6 }}>
+                                    <Text style={{ fontWeight: 'bold', fontSize: 10 }}>Languages:</Text>
+                                    <Text>
+                                        {languages.filter(l => l.name).map(l => `${l.name} ${l.proficiency ? `(${l.proficiency})` : ''}`).join(' • ')}
+                                    </Text>
+                                </View>
+                            )}
+
+                            {awards.length > 0 && awards[0].title && (
+                                <View>
+                                    <Text style={{ fontWeight: 'bold', fontSize: 10, marginBottom: 2 }}>Awards:</Text>
+                                    {awards.filter(a => a.title).map((award, i) => (
+                                        <Text key={i}>• {award.title} {award.issuer ? `(${award.issuer})` : ''}</Text>
+                                    ))}
+                                </View>
+                            )}
+                        </View>
+                    )
                 )}
             </Page>
         </Document>

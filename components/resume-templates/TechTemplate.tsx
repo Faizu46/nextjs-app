@@ -3,20 +3,19 @@ import { Page, Text, View, Document, StyleSheet } from '@react-pdf/renderer';
 import { ResumeData } from '../../types/resume';
 
 const styles = StyleSheet.create({
-    page: { padding: 30, fontFamily: 'Inter', fontSize: 10, color: '#333' },
-    header: { marginBottom: 20, textAlign: 'center' },
-    name: { fontSize: 24, fontWeight: 'bold', marginBottom: 5, color: '#000' },
-    contact: { flexDirection: 'row', justifyContent: 'center', flexWrap: 'wrap', gap: 10, fontSize: 9, color: '#555' },
-    section: { marginBottom: 15 },
-    sectionTitle: { fontSize: 12, fontWeight: 'bold', borderBottom: '1px solid #000', marginBottom: 8, textTransform: 'uppercase' },
+    page: { padding: 25, fontFamily: 'Helvetica', fontSize: 10.5, color: '#000', lineHeight: 1.4 },
+    header: { marginBottom: 15, textAlign: 'center' },
+    name: { fontSize: 20, fontWeight: 'bold', marginBottom: 5, color: '#000', textTransform: 'uppercase' },
+    contact: { flexDirection: 'row', justifyContent: 'center', flexWrap: 'wrap', gap: 8, fontSize: 10, color: '#000' },
+    section: { marginBottom: 12 },
+    sectionTitle: { fontSize: 11, fontWeight: 'bold', borderBottom: '1px solid #000', marginBottom: 6, textTransform: 'uppercase' },
 
-    // Tech specific: Skills grid
-    skillsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 5, marginBottom: 15 },
-    skillBadge: { backgroundColor: '#eee', padding: '3 6', borderRadius: 4, fontSize: 9 },
+    // Tech specific: Skills grid (kept plain inline for ATS safety now)
+    skillsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 5, marginBottom: 10 },
 
     row: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 2 },
     bold: { fontWeight: 'bold' },
-    meta: { fontSize: 9, color: '#666' },
+    meta: { fontSize: 10, color: '#000' },
     text: { textAlign: 'justify', lineHeight: 1.4 },
 });
 
@@ -29,36 +28,55 @@ export const TechTemplate: React.FC<{ data: ResumeData }> = ({ data }) => {
                 <View style={styles.header}>
                     <Text style={styles.name}>{personal.fullName}</Text>
                     <View style={styles.contact}>
-                        {[personal.email, personal.phone, personal.website, personal.linkedin, personal.location].filter(Boolean).map((info, i) => (
-                            <Text key={i}>{info} {i < 3 && '•'}</Text>
+                        {[
+                            personal.email,
+                            personal.phone,
+                            personal.website,
+                            personal.linkedin,
+                            personal.location
+                        ].filter(info => info && info.trim().length > 0).map((info, i, arr) => (
+                            <Text key={i}>{info} {i < arr.length - 1 && '•'}</Text>
                         ))}
                     </View>
                 </View>
 
-                {/* Skills First for Tech */}
+                {/* 1. Summary (if present) */}
+                {summary.summary && summary.summary.trim().length > 0 && (
+                    <View style={styles.section}>
+                        <Text style={styles.sectionTitle}>Professional Summary</Text>
+                        <Text style={styles.text}>{summary.summary}</Text>
+                    </View>
+                )}
+
+                {/* 2. Objective (if present) */}
+                {summary.objective && summary.objective.trim().length > 0 && (
+                    <View style={styles.section}>
+                        <Text style={styles.sectionTitle}>Objective</Text>
+                        <Text style={styles.text}>{summary.objective}</Text>
+                    </View>
+                )}
+
+                {/* Skills First for Tech - Fixed to be inline/block instead of grid to be safer for ATS */}
                 {skillCategories.length > 0 && (
                     <View style={styles.section}>
                         <Text style={styles.sectionTitle}>Technical Skills</Text>
                         {skillCategories.map((cat, i) => (
                             <View key={i} style={{ marginBottom: 5 }}>
-                                <Text style={{ fontWeight: 'bold', marginBottom: 2 }}>{cat.name}</Text>
-                                <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
-                                    <Text>{cat.skills}</Text>
-                                </View>
+                                <Text style={{ fontWeight: 'bold', marginBottom: 2 }}>{cat.name}: <Text style={{ fontWeight: 'normal' }}>{cat.skills}</Text></Text>
                             </View>
                         ))}
                     </View>
                 )}
 
                 {/* Projects Second for Tech */}
-                {projects.length > 0 && (
+                {projects.length > 0 && projects[0].name && (
                     <View style={styles.section}>
                         <Text style={styles.sectionTitle}>Projects</Text>
                         {projects.map((proj, i) => (
                             <View key={i} style={{ marginBottom: 10 }}>
                                 <View style={styles.row}>
                                     <Text style={styles.bold}>{proj.name}</Text>
-                                    <Text style={{ color: 'blue', fontSize: 9 }}>{proj.link}</Text>
+                                    {proj.link && <Text style={{ color: 'blue', fontSize: 9 }}>{proj.link}</Text>}
                                 </View>
                                 {proj.technologies && <Text style={{ fontStyle: 'italic', fontSize: 9, marginBottom: 2 }}>{proj.technologies}</Text>}
                                 <Text style={styles.text}>{proj.description}</Text>
@@ -68,7 +86,7 @@ export const TechTemplate: React.FC<{ data: ResumeData }> = ({ data }) => {
                 )}
 
                 {/* Experience */}
-                {experiences.length > 0 && (
+                {experiences.length > 0 && experiences[0].company && (
                     <View style={styles.section}>
                         <Text style={styles.sectionTitle}>Experience</Text>
                         {experiences.map((exp, i) => (
@@ -85,7 +103,7 @@ export const TechTemplate: React.FC<{ data: ResumeData }> = ({ data }) => {
                 )}
 
                 {/* Education */}
-                {education.length > 0 && (
+                {education.length > 0 && education[0].institution && (
                     <View style={styles.section}>
                         <Text style={styles.sectionTitle}>Education</Text>
                         {education.map((edu, i) => (

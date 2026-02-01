@@ -3,12 +3,12 @@ import { Page, Text, View, Document, StyleSheet } from '@react-pdf/renderer';
 import { ResumeData } from '../../types/resume';
 
 const styles = StyleSheet.create({
-    page: { padding: 40, fontFamily: 'Times-Roman', fontSize: 11, lineHeight: 1.4 },
-    header: { marginBottom: 20, textAlign: 'center', borderBottom: '1px solid #000', paddingBottom: 10 },
+    page: { padding: 30, fontFamily: 'Times-Roman', fontSize: 10.5, lineHeight: 1.4 },
+    header: { marginBottom: 15, textAlign: 'center', borderBottom: '1px solid #000', paddingBottom: 8 },
     name: { fontSize: 20, fontWeight: 'bold', marginBottom: 5, textTransform: 'uppercase' },
-    contact: { fontSize: 10, marginBottom: 5 },
-    section: { marginBottom: 15 },
-    sectionTitle: { fontSize: 12, fontWeight: 'bold', textTransform: 'uppercase', marginBottom: 5 },
+    contact: { fontSize: 10, marginBottom: 3 },
+    section: { marginBottom: 12 },
+    sectionTitle: { fontSize: 11, fontWeight: 'bold', textTransform: 'uppercase', marginBottom: 5 },
 
     // Academic specific
     row: { flexDirection: 'row', justifyContent: 'space-between' },
@@ -16,7 +16,7 @@ const styles = StyleSheet.create({
 });
 
 export const AcademicTemplate: React.FC<{ data: ResumeData }> = ({ data }) => {
-    const { personal, experiences, education, projects, certifications, skillCategories } = data;
+    const { personal, summary, experiences, education, projects, certifications, skillCategories } = data;
 
     return (
         <Document>
@@ -24,15 +24,34 @@ export const AcademicTemplate: React.FC<{ data: ResumeData }> = ({ data }) => {
                 <View style={styles.header}>
                     <Text style={styles.name}>{personal.fullName}</Text>
                     <Text style={styles.contact}>
-                        {[personal.email, personal.phone, personal.location].filter(Boolean).join(' | ')}
-                    </Text>
-                    <Text style={styles.contact}>
-                        {[personal.linkedin, personal.website].filter(Boolean).join(' | ')}
+                        {[
+                            personal.email,
+                            personal.phone,
+                            personal.location,
+                            personal.linkedin,
+                            personal.website
+                        ].filter(item => item && item.trim().length > 0).join(' | ')}
                     </Text>
                 </View>
 
-                {/* Education First for Academic */}
-                {education.length > 0 && (
+                {/* 1. Summary (if present) */}
+                {summary.summary && summary.summary.trim().length > 0 && (
+                    <View style={styles.section}>
+                        <Text style={styles.sectionTitle}>Summary</Text>
+                        <Text style={{ textAlign: 'justify' }}>{summary.summary}</Text>
+                    </View>
+                )}
+
+                {/* 2. Objective (if present) */}
+                {summary.objective && summary.objective.trim().length > 0 && (
+                    <View style={styles.section}>
+                        <Text style={styles.sectionTitle}>Objective</Text>
+                        <Text style={{ textAlign: 'justify' }}>{summary.objective}</Text>
+                    </View>
+                )}
+
+                {/* Education First for Academic - Strict Check */}
+                {education.length > 0 && education[0].institution && (
                     <View style={styles.section}>
                         <Text style={styles.sectionTitle}>Education</Text>
                         {education.map((edu, i) => (
@@ -46,14 +65,16 @@ export const AcademicTemplate: React.FC<{ data: ResumeData }> = ({ data }) => {
                                     <Text>{edu.start} - {edu.end}</Text>
                                 </View>
                                 {edu.gpa && <Text>GPA: {edu.gpa}</Text>}
-                                {edu.summary && <Text style={{ marginLeft: 10, fontSize: 10 }}>{edu.summary}</Text>}
+                                {edu.summary && edu.summary.trim().length > 0 && (
+                                    <Text style={{ marginLeft: 10, fontSize: 10, marginTop: 2 }}>{edu.summary}</Text>
+                                )}
                             </View>
                         ))}
                     </View>
                 )}
 
-                {/* Experience */}
-                {experiences.length > 0 && (
+                {/* Experience - Strict Check */}
+                {experiences.length > 0 && experiences[0].company && (
                     <View style={styles.section}>
                         <Text style={styles.sectionTitle}>Professional Experience</Text>
                         {experiences.map((exp, i) => (
@@ -66,14 +87,16 @@ export const AcademicTemplate: React.FC<{ data: ResumeData }> = ({ data }) => {
                                     <Text style={{ fontStyle: 'italic' }}>{exp.role}</Text>
                                     <Text>{exp.start} - {exp.end}</Text>
                                 </View>
-                                <Text style={{ marginLeft: 10, fontSize: 10 }}>{exp.summary}</Text>
+                                {exp.summary && exp.summary.trim().length > 0 && (
+                                    <Text style={{ marginLeft: 10, fontSize: 10, marginTop: 2 }}>{exp.summary}</Text>
+                                )}
                             </View>
                         ))}
                     </View>
                 )}
 
-                {/* Projects/Research */}
-                {projects.length > 0 && (
+                {/* Projects/Research - Strict Check */}
+                {projects.length > 0 && projects[0].name && (
                     <View style={styles.section}>
                         <Text style={styles.sectionTitle}>Projects & Research</Text>
                         {projects.map((proj, i) => (
@@ -85,12 +108,12 @@ export const AcademicTemplate: React.FC<{ data: ResumeData }> = ({ data }) => {
                     </View>
                 )}
 
-                {/* Skills */}
+                {/* Skills - Strict Check */}
                 {skillCategories.length > 0 && (
                     <View style={styles.section}>
                         <Text style={styles.sectionTitle}>Skills</Text>
                         {skillCategories.map((cat, i) => (
-                            <Text key={i} style={{ fontSize: 10 }}>
+                            <Text key={i} style={{ fontSize: 10, marginBottom: 2 }}>
                                 <Text style={{ fontWeight: 'bold' }}>{cat.name}: </Text>
                                 {cat.skills}
                             </Text>
