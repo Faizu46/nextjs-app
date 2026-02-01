@@ -4,7 +4,6 @@ import { useState, FormEvent } from 'react';
 import Link from 'next/link';
 import { signIn } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import Navigation from '@/components/Navigation';
 
 export default function Register() {
   const router = useRouter();
@@ -73,16 +72,6 @@ export default function Register() {
     }
   };
 
-  const handleSocialSignup = async (provider: string) => {
-    setIsLoading(true);
-    try {
-      await signIn(provider, { callbackUrl: '/dashboard' });
-    } catch (err) {
-      setError(`Failed to sign up with ${provider}`);
-      setIsLoading(false);
-    }
-  };
-
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
       ...formData,
@@ -91,150 +80,116 @@ export default function Register() {
   };
 
   return (
-    <>
-      <Navigation />
-      
-      <main>
-        <section className="section">
-          <div className="container">
-            <div className="row justify-content-center">
-              <div className="col-md-6">
-                <div className="card">
-                  <div className="card-header text-center">
-                    <h2>Create Your Account</h2>
-                  </div>
-                  <div className="card-body">
-                    {error && (
-                      <div className="alert alert-error">
-                        <span style={{ marginRight: '0.5rem' }}>⚠️</span>
-                        {error}
-                      </div>
-                    )}
+    <main>
+      <section className="section">
+        <div className="container">
+          <div className="row justify-content-center">
+            <div className="col-md-6">
+              <div className="card">
+                <div className="card-header text-center">
+                  <h2>Create Your Account</h2>
+                </div>
+                <div className="card-body">
+                  {error && (
+                    <div className="alert alert-error">
+                      <span style={{ marginRight: '0.5rem' }}>⚠️</span>
+                      {error}
+                    </div>
+                  )}
 
-                    <form onSubmit={handleSubmit}>
-                      <div className="form-group">
-                        <label htmlFor="name" className="form-label">
-                          Full Name
-                        </label>
-                        <input
-                          type="text"
-                          id="name"
-                          name="name"
-                          className="form-control"
-                          placeholder="Enter your full name"
-                          value={formData.name}
-                          onChange={handleChange}
-                          required
-                          disabled={isLoading}
-                        />
-                      </div>
-
-                      <div className="form-group">
-                        <label htmlFor="email" className="form-label">
-                          Email Address
-                        </label>
-                        <input
-                          type="email"
-                          id="email"
-                          name="email"
-                          className="form-control"
-                          placeholder="Enter your email"
-                          value={formData.email}
-                          onChange={handleChange}
-                          required
-                          disabled={isLoading}
-                        />
-                      </div>
-
-                      <div className="form-group">
-                        <label htmlFor="password" className="form-label">
-                          Password
-                        </label>
-                        <input
-                          type="password"
-                          id="password"
-                          name="password"
-                          className="form-control"
-                          placeholder="Enter your password (min 6 characters)"
-                          value={formData.password}
-                          onChange={handleChange}
-                          required
-                          disabled={isLoading}
-                        />
-                      </div>
-
-                      <div className="form-group">
-                        <label htmlFor="confirmPassword" className="form-label">
-                          Confirm Password
-                        </label>
-                        <input
-                          type="password"
-                          id="confirmPassword"
-                          name="confirmPassword"
-                          className="form-control"
-                          placeholder="Confirm your password"
-                          value={formData.confirmPassword}
-                          onChange={handleChange}
-                          required
-                          disabled={isLoading}
-                        />
-                      </div>
-
-                      <button
-                        type="submit"
-                        className="btn btn-primary"
-                        style={{ width: '100%' }}
+                  <form onSubmit={handleSubmit}>
+                    <div className="form-group">
+                      <label htmlFor="name" className="form-label">
+                        Full Name
+                      </label>
+                      <input
+                        type="text"
+                        id="name"
+                        name="name"
+                        className="form-control"
+                        placeholder="Enter your full name"
+                        value={formData.name}
+                        onChange={handleChange}
+                        required
                         disabled={isLoading}
-                      >
-                        {isLoading ? 'Creating Account...' : 'Sign Up'}
-                      </button>
-                    </form>
-
-                    <div className="text-center mt-3">
-                      <p style={{ color: 'var(--text-secondary)' }}>
-                        Already have an account?{' '}
-                        <Link href="/login" style={{ color: 'var(--glow-color)', fontWeight: 600, textDecoration: 'none' }}>
-                          Login here
-                        </Link>
-                      </p>
+                      />
                     </div>
 
-                    <div className="text-center mt-4" style={{ paddingTop: '1.5rem', borderTop: '1px solid rgba(255, 255, 255, 0.1)' }}>
-                      <p style={{ marginBottom: '1rem', color: 'var(--text-secondary)' }}>Or sign up with</p>
-                      <div className="d-flex gap-2 justify-content-center" style={{ flexWrap: 'wrap' }}>
-                        <button 
-                          className="btn btn-outline-primary"
-                          onClick={() => handleSocialSignup('google')}
-                          disabled={isLoading}
-                          style={{ minWidth: '100px' }}
-                        >
-                          🔵 Google
-                        </button>
-                        <button 
-                          className="btn btn-outline-primary"
-                          onClick={() => handleSocialSignup('facebook')}
-                          disabled={isLoading}
-                          style={{ minWidth: '100px' }}
-                        >
-                          📘 Facebook
-                        </button>
-                        <button 
-                          className="btn btn-outline-primary"
-                          onClick={() => handleSocialSignup('linkedin')}
-                          disabled={isLoading}
-                          style={{ minWidth: '100px' }}
-                        >
-                          💼 LinkedIn
-                        </button>
-                      </div>
+                    <div className="form-group">
+                      <label htmlFor="email" className="form-label">
+                        Email Address
+                      </label>
+                      <input
+                        type="email"
+                        id="email"
+                        name="email"
+                        className="form-control"
+                        placeholder="Enter your email"
+                        value={formData.email}
+                        onChange={handleChange}
+                        required
+                        disabled={isLoading}
+                      />
                     </div>
+
+                    <div className="form-group">
+                      <label htmlFor="password" className="form-label">
+                        Password
+                      </label>
+                      <input
+                        type="password"
+                        id="password"
+                        name="password"
+                        className="form-control"
+                        placeholder="Enter your password (min 6 characters)"
+                        value={formData.password}
+                        onChange={handleChange}
+                        required
+                        disabled={isLoading}
+                      />
+                    </div>
+
+                    <div className="form-group">
+                      <label htmlFor="confirmPassword" className="form-label">
+                        Confirm Password
+                      </label>
+                      <input
+                        type="password"
+                        id="confirmPassword"
+                        name="confirmPassword"
+                        className="form-control"
+                        placeholder="Confirm your password"
+                        value={formData.confirmPassword}
+                        onChange={handleChange}
+                        required
+                        disabled={isLoading}
+                      />
+                    </div>
+
+                    <button
+                      type="submit"
+                      className="btn btn-primary"
+                      style={{ width: '100%' }}
+                      disabled={isLoading}
+                    >
+                      {isLoading ? 'Creating Account...' : 'Sign Up'}
+                    </button>
+                  </form>
+
+                  <div className="text-center mt-3">
+                    <p style={{ color: 'var(--text-secondary)' }}>
+                      Already have an account?{' '}
+                      <Link href="/login" style={{ color: 'var(--glow-color)', fontWeight: 600, textDecoration: 'none' }}>
+                        Login here
+                      </Link>
+                    </p>
                   </div>
                 </div>
               </div>
             </div>
           </div>
-        </section>
-      </main>
-    </>
+        </div>
+      </section>
+    </main>
   );
 }
